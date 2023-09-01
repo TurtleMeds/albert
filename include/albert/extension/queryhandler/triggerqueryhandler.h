@@ -2,6 +2,7 @@
 
 #pragma once
 #include "albert/extension.h"
+#include "albert/extension/queryhandler/item.h"
 #include <QString>
 #include <memory>
 class TriggerQueryHandlerPrivate;
@@ -9,7 +10,6 @@ class QueryEngine;
 
 namespace albert
 {
-class Item;
 
 /// Triggered query handler class.
 /// If the trigger matches this handler is the only query handler chosen to

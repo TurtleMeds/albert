@@ -8,7 +8,7 @@ namespace albert
 {
 
 /// General purpose value type Item implememtation
-struct ALBERT_EXPORT StandardItem : public Item
+class ALBERT_EXPORT StandardItem : public Item
 {
 public:
     /// \brief StandardItem constructor
@@ -87,3 +87,7 @@ protected:
 };
 
 }
+
+// Instanciate common templates explicitly to reduce binary sizes
+extern template class ALBERT_EXPORT std::shared_ptr<albert::StandardItem>;
+extern template class ALBERT_EXPORT std::vector<std::shared_ptr<albert::StandardItem>>;

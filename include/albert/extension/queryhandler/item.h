@@ -3,6 +3,7 @@
 #pragma once
 #include "albert/extension/queryhandler/action.h"
 #include <QStringList>
+#include <memory>
 #include <vector>
 
 namespace albert
@@ -41,3 +42,7 @@ public:
 };
 
 }
+
+// Instanciate common templates explicitly to reduce binary sizes
+extern template class ALBERT_EXPORT std::shared_ptr<albert::Item>;
+extern template class ALBERT_EXPORT std::vector<std::shared_ptr<albert::Item>>;

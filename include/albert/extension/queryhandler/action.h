@@ -4,6 +4,7 @@
 #include "albert/export.h"
 #include <QString>
 #include <functional>
+#include <vector>
 
 namespace albert
 {
@@ -12,6 +13,12 @@ namespace albert
 class ALBERT_EXPORT Action final
 {
 public:
+    // Required for ETI. See https://stackoverflow.com/questions/69556553/how-to-create-an-explicit-template-instantiation-declaration-for-stdvector-wit
+    Action();
+    Action(const Action&);
+    Action(Action&&);
+    Action &operator=(const Action&);
+    Action &operator=(Action&&);
 
     /// Action constructor
     /// \param id Identifier of the action.
@@ -25,3 +32,6 @@ public:
 };
 
 }
+
+// Instanciate common templates explicitly to reduce binary sizes
+extern template class ALBERT_EXPORT std::vector<albert::Action>;

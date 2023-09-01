@@ -3,6 +3,9 @@
 #include "albert/extension/queryhandler/standarditem.h"
 using namespace albert;
 
+template class std::shared_ptr<StandardItem>;
+template class std::vector<std::shared_ptr<StandardItem>>;
+
 StandardItem::StandardItem(QString id,
                            QString text,
                            QString subtext,
