@@ -55,3 +55,17 @@ std::unique_ptr<QSettings> albert::PluginInstance::settings() const
     s->beginGroup(id());
     return s;
 }
+
+//#include <QLoggingCategory>
+
+//QMessageLogger PluginInstance::debug()
+//{ return (qCDebug((*d->logging_category))); }
+
+//QMessageLogger PluginInstance::info()
+//{ return qCInfo((*d->logging_category)); }
+
+//QMessageLogger PluginInstance::warning()
+//{ return qCWarning((*d->logging_category)); }
+
+//QMessageLogger PluginInstance::critical()
+//{ return qCCritical((*d->logging_category)); }
