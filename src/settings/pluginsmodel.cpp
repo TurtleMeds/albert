@@ -10,20 +10,34 @@
 using namespace std;
 using namespace albert;
 
-PluginsModel::PluginsModel(PluginRegistry &plugin_registry) : plugin_registry_(plugin_registry)
+PluginsModel::PluginsModel(PluginRegistry &plugin_registry)
+    : plugin_registry_(plugin_registry)
 {
     connect(&plugin_registry, &PluginRegistry::pluginsChanged, this, &PluginsModel::updatePluginList);
     updatePluginList();
 }
 
-QIcon PluginsModel::getCachedIcon(const QString &url) const
+void PluginsModel::updatePluginList()
 {
-    try {
-        return icon_cache.at(url);
-    } catch (const std::out_of_range &e) {
-        return icon_cache.emplace(url, url).first->second;
+    beginResetModel();
+
+    for (auto *plugin : plugins_)
+        disconnect(plugin, nullptr, this, nullptr);
+    plugins_.clear();
+
+    for (auto &[id, loader] : plugin_registry_.plugins()){
+        plugins_.emplace_back(&loader);
+        connect(&loader, &Plugin::stateChanged, this, &PluginsModel::emitDataChanged);
+        connect(&loader, &Plugin::enabledChanged, this, &PluginsModel::emitDataChanged);
     }
+
+    sort(0);
+
+    endResetModel();
 }
+
+void PluginsModel::emitDataChanged()
+{ emit dataChanged(index(0), index(plugins_.size()-1)); }
 
 int PluginsModel::rowCount(const QModelIndex &) const
 { return static_cast<int>(plugins_.size()); }
@@ -103,28 +117,4 @@ Qt::ItemFlags PluginsModel::flags(const QModelIndex &idx) const
         }
     }
     return Qt::NoItemFlags;
-}
-
-void PluginsModel::updatePluginList()
-{
-    beginResetModel();
-
-    plugins_.clear();
-
-    for (auto &[id, loader] : plugin_registry_.plugins()){
-        plugins_.emplace_back(&loader);
-        connect(&loader, &Plugin::stateChanged, this, &PluginsModel::updateView, Qt::UniqueConnection);
-        connect(&loader, &Plugin::enabledChanged, this, &PluginsModel::updateView, Qt::UniqueConnection);
-    }
-
-    ::sort(plugins_.begin(), plugins_.end(),
-           [](const auto &l, const auto &r){ return l->metaData().name < r->metaData().name; });
-
-    endResetModel();
-}
-
-void PluginsModel::updateView()
-{
-    // Well not worth the optimizations
-    emit dataChanged(index(0), index(plugins_.size()-1));
 }

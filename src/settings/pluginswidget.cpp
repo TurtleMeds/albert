@@ -11,49 +11,95 @@
 #include <QLabel>
 #include <QListView>
 #include <QScrollArea>
+#include <QSortFilterProxyModel>
 #include <QSplitter>
 using namespace albert;
 using namespace std;
 
 
-PluginsWidget::PluginsWidget(PluginRegistry &plugin_registry) : model_(new PluginsModel(plugin_registry))
+bool SortFilterModel::filterAcceptsRow(int source_row, const QModelIndex &) const
+{ return !isEnabled_ || sourceModel()->index(source_row, 0).data(Qt::CheckStateRole) == Qt::Checked; }
+
+
+// Qt::ItemFlags SortFilterModel::flags(const QModelIndex &index) const
+// {
+//     return QSortFilterProxyModel::flags(index) & ~Qt::ItemIsUserCheckable;
+// }
+
+QVariant SortFilterModel::data(const QModelIndex &index, int role) const
 {
-    setObjectName("PluginWidget");
+    if (isEnabled_ && role == Qt::CheckStateRole)
+        return {};
+    else
+        return QSortFilterProxyModel::data(index, role);
+}
 
-    QSplitter *splitter = new QSplitter(this);
-    QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
-    horizontalLayout->setContentsMargins(splitter->handleWidth(), splitter->handleWidth(),
-                                         splitter->handleWidth(), splitter->handleWidth());
+void SortFilterModel::setEnabled(bool enable)
+{
+    isEnabled_ = enable;
+    invalidate();
+}
 
-    horizontalLayout->addWidget(splitter);
+bool SortFilterModel::isEnabled() const { return isEnabled_; }
 
-    listView_plugins = new QListView(this);
-    listView_plugins->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    listView_plugins->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    listView_plugins->setProperty("showDropIndicator", QVariant(false));
-    listView_plugins->setAlternatingRowColors(true);
-    listView_plugins->setSpacing(1);
-    listView_plugins->setUniformItemSizes(true);
-    listView_plugins->setModel(model_.get());
-    listView_plugins->setMaximumWidth(listView_plugins->sizeHintForColumn(0)
-                                      + qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent));
+PluginsWidget::PluginsWidget(PluginRegistry &plugin_registry)
+    : plugin_registry_(plugin_registry), model_(new PluginsModel(plugin_registry))
+{
+    ui.setupUi(this);
+    // ui.horizontalLayout->setContentsMargins(ui.horizontalLayout->spacing(),
+    //                                         ui.horizontalLayout->spacing(),
+    //                                         ui.horizontalLayout->spacing(),
+    //                                         ui.horizontalLayout->spacing());
 
-    splitter->addWidget(listView_plugins);
+    // listView_plugins = new QListView(this);
+    // listView_plugins->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // listView_plugins->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    // listView_plugins->setProperty("showDropIndicator", QVariant(false));
+    // listView_plugins->setAlternatingRowColors(true);
+    // listView_plugins->setSpacing(1);
+    // listView_plugins->setUniformItemSizes(true);
 
-    scrollArea_info = new QScrollArea(this);
-    scrollArea_info->setFrameShape(QFrame::StyledPanel);
-    scrollArea_info->setFrameShadow(QFrame::Sunken);
-    scrollArea_info->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scrollArea_info->setWidgetResizable(true);
-    scrollArea_info->setAlignment(Qt::AlignLeading | Qt::AlignLeft | Qt::AlignTop);
+    // scrollArea_info = new QScrollArea(this);
+    // scrollArea_info->setFrameShape(QFrame::StyledPanel);
+    // scrollArea_info->setFrameShadow(QFrame::Sunken);
+    // scrollArea_info->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // scrollArea_info->setWidgetResizable(true);
+    // scrollArea_info->setAlignment(Qt::AlignLeading | Qt::AlignLeft | Qt::AlignTop);
 
-    splitter->addWidget(scrollArea_info);
+    // QSplitter *splitter = new QSplitter(this);
+    // splitter->addWidget(listView_plugins);
+    // splitter->addWidget(scrollArea_info);
 
-    connect(listView_plugins->selectionModel(), &QItemSelectionModel::currentChanged,
+    // QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
+    // horizontalLayout->addWidget(splitter);
+    // horizontalLayout->setContentsMargins(splitter->handleWidth(), splitter->handleWidth(),
+    //                                      splitter->handleWidth(), splitter->handleWidth());
+
+    // Setup model
+
+    // proxy_model_.setFilterRole(Qt::CheckStateRole);
+    proxy_model_.setSourceModel(model_.get());
+    proxy_model_.setDynamicSortFilter(true);
+
+
+    ui.listView_plugins->setStyleSheet("QListView::item{height: 22px}");
+    ui.listView_plugins->setModel(&proxy_model_);
+
+
+    ui.listView_plugins->setMaximumWidth(ui.listView_plugins->sizeHintForColumn(0)
+                                         + qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent));
+
+
+
+
+    connect(ui.listView_plugins->selectionModel(), &QItemSelectionModel::currentChanged,
             this, &PluginsWidget::onUpdatePluginWidget);
 
     connect(model_.get(), &PluginsModel::dataChanged,
             this, &PluginsWidget::onUpdatePluginWidget);
+
+
+    // connect(ui.checkBox, &QCheckBox::clicked, &proxy_model_, &SortFilterModel::setEnabled);
 
     onUpdatePluginWidget();
 }
@@ -62,8 +108,8 @@ void PluginsWidget::tryShowPluginSettings(QString plugin_id)
 {
     for (auto row = 0; row < model_->rowCount(); ++row)
         if (auto index = model_->index(row); index.data(Qt::UserRole).toString() == plugin_id){
-            listView_plugins->setCurrentIndex(index);
-            listView_plugins->setFocus();
+            ui.listView_plugins->setCurrentIndex(index);
+            ui.listView_plugins->setFocus();
         }
 }
 
@@ -71,17 +117,19 @@ PluginsWidget::~PluginsWidget() = default;
 
 void PluginsWidget::onUpdatePluginWidget()
 {
-    auto current = listView_plugins->currentIndex();
+    auto current = ui.listView_plugins->currentIndex();
     QLabel *l;
 
     if (!current.isValid()){
         l = new QLabel(tr("Select a plugin"));
         l->setAlignment(Qt::AlignCenter);
-        scrollArea_info->setWidget(l);
+        ui.scrollArea_info->setWidget(l);
         return;
     }
 
-    auto &p = *model_->plugins_[current.row()];
+    auto id = current.data(Qt::UserRole).toString();
+    auto &p = plugin_registry_.plugins().at(id);
+
     auto *widget = new QWidget;
     auto *vl = new QVBoxLayout;
     widget->setLayout(vl);
@@ -161,5 +209,7 @@ void PluginsWidget::onUpdatePluginWidget()
     l->setWordWrap(true);
     vl->addWidget(l);
 
-    scrollArea_info->setWidget(widget);
+    ui.scrollArea_info->setWidget(widget);
 }
+
+
