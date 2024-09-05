@@ -1,6 +1,7 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
 #include "logging.h"
+#include "plugininstance.h"
 #include "pluginloader.h"
 #include "pluginmetadata.h"
 #include "pluginprovider.h"
@@ -137,11 +138,18 @@ void PluginRegistry::load(const QString &id)
         QStringList errors;
         for (auto *p : v)
             if (p->state() != Plugin::State::Loaded)
-                if (auto err = p->load(); !err.isEmpty())
+            {
+                if (auto err = p->load(); err.isEmpty())
+                {
+                    for (auto *e : p->instance()->extensions())
+                        extension_registry_.registerExtension(e);
+                }
+                else
                 {
                     WARN << QString("Failed loading plugin '%1': %2").arg(p->id(), err);
                     errors << QString("%1 (%2):\n%3").arg(p->metaData().name, p->id(), err);
                 }
+            }
 
         if (!errors.isEmpty())
             QMessageBox::warning(nullptr, qApp->applicationDisplayName(),
@@ -167,11 +175,17 @@ void PluginRegistry::unload(const QString &id)
 
         QStringList errors;
         for (auto *p : v)
+        {
+            if (p->state() != Plugin::State::Loaded)
+                for (auto *e : p->instance()->extensions())
+                    extension_registry_.deregisterExtension(e);
+
             if (auto err = p->unload(); !err.isEmpty())
             {
                 WARN << QString("Failed unloading plugin '%1': %2").arg(p->id(), err);
                 errors << QString("%1 (%2):\n%3").arg(p->metaData().name, p->id(), err);
             }
+        }
 
         if (!errors.isEmpty())
             QMessageBox::warning(nullptr, qApp->applicationDisplayName(),
@@ -263,7 +277,12 @@ void PluginRegistry::onAdd(PluginProvider *plugin_provider)
     // Load enabled plugins
     QStringList errors;
     for (auto *p : plugins_to_load)
-        if (auto err = p->load(); !err.isEmpty())
+        if (auto err = p->load(); err.isEmpty())
+        {
+            for (auto *e : p->instance()->extensions())
+                extension_registry_.registerExtension(e);
+        }
+        else
         {
             WARN << QString("Failed loading plugin '%1': %2").arg(p->id(), err);
             errors << QString("%1 (%2):\n%3").arg(p->metaData().name, p->id(), err);

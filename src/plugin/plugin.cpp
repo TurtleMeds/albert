@@ -125,12 +125,6 @@ QString Plugin::load() noexcept
         if (!instance_)
             throw runtime_error("createInstance() returned nullptr");
 
-        // Auto register root extensions
-        if (auto *e = dynamic_cast<Extension*>(instance_); e)
-            if (!PluginRegistry::staticDI.registry->registerExtension(e))
-                throw runtime_error(tr("Root extension registration failed: '%1'")
-                                        .arg(id()).toStdString());
-
         setState(State::Loaded, tr("Load: %1 ms, Instanciate: %2 ms").arg(dur_l).arg(dur_c));
         return {};
     }
@@ -158,11 +152,6 @@ QString Plugin::unload() noexcept
     QStringList errors;
     try {
         auto tp = system_clock::now();
-
-        // Auto deregister root extensions
-        if (auto *e = dynamic_cast<Extension*>(instance_); e)
-            PluginRegistry::staticDI.registry->deregisterExtension(e);
-
         loader->unload();
         auto dur = duration_cast<milliseconds>(system_clock::now() - tp).count();
         DEBG << QStringLiteral("%1 ms spent unloading plugin '%2'").arg(dur).arg(id());
