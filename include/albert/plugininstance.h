@@ -7,6 +7,8 @@
 #include <albert/export.h>
 #include <filesystem>
 #include <memory>
+#include <vector>
+class PluginInstancePrivate;
 class QSettings;
 class QWidget;
 
@@ -75,8 +77,7 @@ protected:
 
 private:
 
-    class Private;
-    std::unique_ptr<Private> d;
+    std::unique_ptr<PluginInstancePrivate> d;
 
 };
 

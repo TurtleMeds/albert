@@ -43,17 +43,15 @@ public:
     const QHotkey *hotkey() const;
     void setHotkey(std::unique_ptr<QHotkey> hotkey);
 
-    QStringList availableFrontends();
-    QString currentFrontend();
-    void setFrontend(uint i);
     albert::Frontend *frontend();
+    void setFrontend(const QString &id);
 
 private:
 
-    explicit App(const QStringList &additional_plugin_paths, bool load_enabled);
+    explicit App(const QStringList &additional_plugin_paths);
     ~App() override;
 
-    void initialize();
+    void initialize(bool load_enabled);
     void finalize();
 
     friend int albert::run(int, char**);

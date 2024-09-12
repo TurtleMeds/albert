@@ -5,10 +5,8 @@
 #include "plugininstance.h"
 #include "qtpluginloader.h"
 #include <QCoreApplication>
-#include <QFutureWatcher>
 #include <QPluginLoader>
 #include <QTranslator>
-#include <QtConcurrent>
 using namespace albert;
 using namespace std;
 
@@ -29,7 +27,9 @@ static QString fetchLocalizedMetadata(const QJsonObject &json ,const QString &ke
 }
 
 
-QtPluginLoader::QtPluginLoader(const QString &p) : loader_(p), instance_(nullptr)
+QtPluginLoader::QtPluginLoader(const QString &p):
+    loader_(p),
+    instance_(nullptr)
 {
     //
     // Check interface
@@ -143,7 +143,7 @@ QtPluginLoader::QtPluginLoader(const QString &p) : loader_(p), instance_(nullptr
     // Probably this should be reported as a bug to Qt. But well, … PreventUnload
     //
 
-    loader_.setLoadHints(QLibrary::ExportExternalSymbolsHint | QLibrary::PreventUnloadHint);
+    loader_.setLoadHints(/*QLibrary::ExportExternalSymbolsHint |*/ QLibrary::PreventUnloadHint);
 }
 
 QtPluginLoader::~QtPluginLoader()
@@ -155,47 +155,52 @@ QtPluginLoader::~QtPluginLoader()
     }
 }
 
-QString QtPluginLoader::path() const { return loader_.fileName(); }
+QString QtPluginLoader::path() const noexcept { return loader_.fileName(); }
 
-const PluginMetaData &QtPluginLoader::metaData() const { return metadata_; }
+const PluginMetaData &QtPluginLoader::metaData() const noexcept { return metadata_; }
 
-void QtPluginLoader::load()
+albert::PluginInstance & QtPluginLoader::load()
 {
-    QFutureWatcher<void> watcher;
-    watcher.setFuture(QtConcurrent::run([this]{
-        if (!loader_.load())
-            throw runtime_error(loader_.errorString().toStdString());
-    }));
+    if (instance_)
+        return *instance_;
 
-    try{
-        QEventLoop loop;
-        QObject::connect(&watcher, &decltype(watcher)::finished, &loop, &QEventLoop::quit);
-        loop.exec();
-        watcher.future().waitForFinished();
+    if (!loader_.load())
+        throw runtime_error(loader_.errorString().toStdString());
 
-        translator = make_unique<QTranslator>();
-        if (translator->load(QLocale(), metaData().id, "_", ":/i18n"))
-            QCoreApplication::installTranslator(translator.get());
-        else
-            translator.reset();
-    }
-    catch (const QUnhandledException &e)
+    auto *q_instance = loader_.instance();
+
+    if (!q_instance)
     {
-        if (e.exception())
-            std::rethrow_exception(e.exception());
-        else {
-            CRIT << "QUnhandledException but exception() returns nullptr";
-            throw;
-        }
+        loader_.unload();
+        throw runtime_error(QString("Instance returned is null. %1")
+                            .arg(loader_.errorString()).toStdString());
     }
-    catch (...)
+
+    auto *instance = dynamic_cast<PluginInstance*>(q_instance);
+
+    if (!instance)
     {
-        CRIT << "Unknown exception in QtPluginLoader::load()";
+        loader_.unload();
+        throw runtime_error("Plugin instance is not of type albert::PluginInstance.");
     }
+
+    instance_ = instance;
+
+    // Load translations
+    translator = make_unique<QTranslator>();
+    if (translator->load(QLocale(), metaData().id, "_", ":/i18n"))
+        QCoreApplication::installTranslator(translator.get());
+    else
+        translator.reset();
+
+    return *instance_;
 }
 
 void QtPluginLoader::unload()
 {
+    if (!instance_)
+        return;
+
     if (translator)
     {
         QCoreApplication::removeTranslator(translator.get());
@@ -203,22 +208,7 @@ void QtPluginLoader::unload()
     }
 
     instance_ = nullptr;
+
     if (!loader_.unload())
         throw runtime_error(loader_.errorString().toStdString());
-}
-
-PluginInstance *QtPluginLoader::createInstance()
-{
-    if (loader_.isLoaded())
-    {
-        if (!instance_)
-        {
-            auto *instance = loader_.instance();
-            instance_ = dynamic_cast<PluginInstance*>(instance);
-            if (!instance_)
-                throw runtime_error("Plugin instance is not of type albert::PluginInstance.");
-        }
-        return instance_;
-    }
-    return {};
 }

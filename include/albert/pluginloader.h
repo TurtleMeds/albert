@@ -17,29 +17,40 @@ class ALBERT_EXPORT PluginLoader
 {
 public:
 
+    ///
     /// The path to the plugin.
+    ///
     /// @return @copybrief path
-    virtual QString path() const = 0;
+    ///
+    [[nodiscard]] virtual QString path() const noexcept = 0;
 
+    ///
     /// The plugin metadata.
+    ///
     /// @return @copybrief metaData
-    virtual const PluginMetaData &metaData() const = 0;
+    ///
+    [[nodiscard]] virtual const PluginMetaData &metaData() const noexcept = 0;
 
-    /// Load the plugin.
-    /// Called in a background thread.
-    /// Expects the plugin to be loaded after this call.
-    /// @throws std::exception in case of errors.
-    virtual void load() = 0;
+    ///
+    /// Load the plugin and instantiate the plugin instance.
+    ///
+    /// On exceptions the plugin is expected to be in unloaded state.
+    /// On success instance() returns a valid weak reference to the PluginInstance.
+    ///
+    /// @throw std::exception in case of errors.
+    /// @return A weak reference to the PluginInstance.
+    ///
+    [[nodiscard]] virtual PluginInstance &load() = 0;
 
-    /// Unload the plugin.
-    /// @throws std::exception in case of errors.
+    ///
+    /// Delete the instance and unload the plugin.
+    ///
+    /// On exceptions the plugin is expected to be in unloaded state.
+    /// Invalidates any former references to the instance.
+    ///
+    /// @throw std::exception in case of errors.
+    ///
     virtual void unload() = 0;
-
-    /// The plugin instance.
-    /// Not called unless loaded.
-    /// Creates an instance of the plugin if it does not exist.
-    /// @return @copybrief createInstance
-    virtual PluginInstance *createInstance() = 0;
 
 protected:
 
