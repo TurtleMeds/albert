@@ -223,8 +223,10 @@ void App::Private::initTelemetry()
 {
     if (auto s = settings(); !s->contains(CFG_TELEMETRY))
     {
-        auto text = tr("Albert collects anonymous data to enhance user experience. "
-                       "You can review the data to be sent in the details. Opt in?");
+        auto text = tr("Telemetry helps triaging issues and improving the user experience by "
+                       "collecing anonymous data. You can review the data to be sent in the "
+                       "details. This configuration can be changed at any time in the settings. "
+                       "Do you want to enable telemetry?");
 
         QMessageBox mb(QMessageBox::Question, qApp->applicationDisplayName(),
                        text, QMessageBox::No|QMessageBox::Yes);
@@ -234,7 +236,7 @@ void App::Private::initTelemetry()
         s->setValue(CFG_TELEMETRY, mb.exec() == QMessageBox::Yes);
     }
     else if (s->value(CFG_TELEMETRY).toBool())
-        telemetry = make_unique<Telemetry>();
+        telemetry = make_unique<Telemetry>(plugin_registry);
 }
 
 void App::Private::initHotkey()
@@ -489,7 +491,7 @@ bool App::telemetryEnabled() const { return d->telemetry.get(); }
 void App::setTelemetryEnabled(bool enable)
 {
     if (enable && !telemetryEnabled())
-        d->telemetry = make_unique<Telemetry>();
+        d->telemetry = make_unique<Telemetry>(d->plugin_registry);
     else if (!enable && telemetryEnabled())
         d->telemetry.reset();
     else

@@ -2,21 +2,25 @@
 
 #pragma once
 #include <QTimer>
-class QJsonObject;
+#include <QDate>
+class PluginRegistry;
+class QJsonDocument;
 
 class Telemetry final
 {
 public:
 
-    Telemetry();
+    Telemetry(const PluginRegistry&);
 
-    QJsonObject buildReport();
-    QString buildReportString();
+    QJsonDocument buildReport() const;
+    QString buildReportString() const;
 
 private:
 
     void trySendReport();
 
+    const PluginRegistry &plugin_registry;
+    QDate last_report_date;
     QTimer timer;
 
 };
