@@ -2,15 +2,19 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+#include "extensionregistry.h"
 #include <QString>
 #include <albert/export.h>
+#include <filesystem>
 class NotificationPrivate;
 class QNetworkAccessManager;
 class QSettings;
 class QUrl;
+class QDir;
 
 namespace albert
 {
+class ExtensionRegistry;
 
 /// The global QNetworkAccessManager.
 /// \return The global QNetworkAccessManager.
@@ -23,17 +27,17 @@ ALBERT_EXPORT void showSettings(QString plugin_id = {});
 /// The app config location.
 /// The path to the directory where configuration files should be stored.
 /// \return The app config location.
-ALBERT_EXPORT QString configLocation();
+ALBERT_EXPORT std::filesystem::path configLocation();
 
 /// The app cache location.
 /// The path to the directory where cache files should be stored.
 /// \return The app cache location.
-ALBERT_EXPORT QString cacheLocation();
+ALBERT_EXPORT std::filesystem::path cacheLocation();
 
 /// The app data location.
 /// The path to the directory where data files should be stored.
 /// \return The app data location.
-ALBERT_EXPORT QString dataLocation();
+ALBERT_EXPORT std::filesystem::path dataLocation();
 
 /// Persistent app settings storage.
 /// \return Preconfigured QSettings object for configuration storage.
@@ -74,4 +78,29 @@ ALBERT_EXPORT void setClipboardTextAndPaste(const QString &text);
 /// \return The process id
 ALBERT_EXPORT long long runDetachedProcess(const QStringList &commandline, const QString &working_dir = {});
 
-}
+///
+/// Create a directory if it does not exist yet.
+///
+/// This is a utility function for use with the *Location functions.
+///
+/// @param path The path to the directory to create.
+/// @returns The existing directory.
+/// @throws std::runtime_error if the directory could not be created.
+/// @since 0.27
+///
+ALBERT_EXPORT void tryCreateDirectory(const std::filesystem::path &path);
+
+///
+/// The extension registry.
+///
+/// Utilze to look up extensions or watch for changes. Const because registering plugins via this
+/// registry is not allowed. Use PluginInstance::extensions().
+///
+/// See also WeakDependency and StrongDependency.
+///
+/// @since 0.27
+/// @returns A const reference to the extension registry.
+///
+ALBERT_EXPORT const ExtensionRegistry &extensionRegistry();
+
+} // namespace albert

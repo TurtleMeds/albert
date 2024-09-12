@@ -2,6 +2,8 @@
 
 #include "app.h"
 #include "frontend.h"
+#include "pluginmetadata.h"
+#include "pluginregistry.h"
 #include "pluginswidget.h"
 #include "querywidget.h"
 #include "settingswindow.h"
@@ -128,15 +130,16 @@ void SettingsWindow::init_tab_general_trayIcon()
 
 void SettingsWindow::init_tab_general_frontends()
 {
-    // Populate frontend checkbox
-    for (const auto &name : app.availableFrontends())
-    {
-        ui.comboBox_frontend->addItem(name);
-        if (name == app.currentFrontend())
-            ui.comboBox_frontend->setCurrentIndex(ui.comboBox_frontend->count()-1);
-    }
-    connect(ui.comboBox_frontend, &QComboBox::currentIndexChanged, this,
-            [this](int index){ app.setFrontend(index); });
+    for (const auto &[id, plugin] : app.pluginRegistry().plugins())
+        if (plugin.isFrontend())
+        {
+            ui.comboBox_frontend->addItem(plugin.metaData().name, id);
+            if (id == app.frontend()->id())
+                ui.comboBox_frontend->setCurrentIndex(ui.comboBox_frontend->count()-1);
+        }
+
+    connect(ui.comboBox_frontend, &QComboBox::currentIndexChanged,
+            this, [this](int i){ app.setFrontend(ui.comboBox_frontend->itemData(i).toString()); });
 }
 
 void SettingsWindow::init_tab_general_telemetry()

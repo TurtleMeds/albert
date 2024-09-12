@@ -34,6 +34,9 @@ class ALBERT_EXPORT Frontend : public QObject
 
 public:
 
+    /// The identifier
+    virtual QString id() const = 0;
+
     /// Visibility of the frontend
     virtual bool isVisible() const = 0;
 

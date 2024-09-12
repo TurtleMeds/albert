@@ -4,8 +4,9 @@
 #include <QObject>
 #include <QString>
 #include <set>
+class QWidget;
+class PluginRegistry;
 namespace albert {
-class ExtensionRegistry;
 class PluginInstance;
 class PluginLoader;
 class PluginMetaData;
@@ -19,54 +20,46 @@ class Plugin : public QObject
 
 public:
 
-    Plugin(albert::PluginProvider *provider, albert::PluginLoader *loader);
+    Plugin(albert::PluginProvider&, albert::PluginLoader&) noexcept;
+    ~Plugin();
 
-    albert::PluginProvider const * const provider;
+    const albert::PluginProvider &provider;
+    albert::PluginLoader &loader;
+    std::set<Plugin*> dependencies;
+    std::set<Plugin*> dependees;
+    uint load_order;
+
+    enum State {
+        Unloaded,
+        Loading,
+        Loaded,
+        Unloading,
+    } state;
+    QString state_info;
+    bool enabled;
+    albert::PluginInstance *instance;
+
+    static QString localizedStateString(State);
+
+    // Convenience functions
     QString path() const;
     const albert::PluginMetaData &metaData() const;
     const QString &id() const;
     bool isUser() const;
-    bool isEnabled() const;
-    void setEnabled(bool);
-    const std::set<Plugin*> &dependencies() const;
-    const std::set<Plugin*> &dependees() const;
-
-    enum class State {
-        Invalid,
-        Unloaded,
-        Loaded,
-        Busy,
-    };
-
-    State state() const;
-    const QString &stateInfo() const;
-    QString localStateString() const;
-    albert::PluginInstance *instance() const;
-
-private:
-
-    QString load() noexcept;
-    QString unload() noexcept;
-
+    bool isFrontend() const;
+    QWidget *buildConfigWidget() const;
     std::set<Plugin*> transitiveDependencies() const;
     std::set<Plugin*> transitiveDependees() const;
 
-    void setState(State, QString info = {});
+    void setEnabled(bool);
+    void setState(Plugin::State state, QString info = {});
 
-    albert::PluginLoader * const loader;
-    std::set<Plugin*> dependencies_;
-    std::set<Plugin*> dependees_;
-    uint load_order;
-    bool enabled_;
-    QString state_info_;
-    State state_;
-    albert::PluginInstance *instance_;
-
-    friend class PluginRegistry;
+    QString load();
+    QString unload();
 
 signals:
 
-    void stateChanged();
-    void enabledChanged();
+    void enabledChanged(bool);
+    void stateChanged(Plugin::State, QString);
 
 };

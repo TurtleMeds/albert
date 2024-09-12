@@ -20,75 +20,54 @@ AppQueryHandler::AppQueryHandler()
             tr("Settings"),
             tr("Albert settings"),
             icon_urls,
-            {
-                {
-                    "sett",
-                    tr("Open"),
-                    [](){ App::instance()->showSettings(); }
-                }
-            }),
+            {{
+                "sett", tr("Open"), []{ App::instance()->showSettings(); }
+            }}),
 
         StandardItem::make(
             "quit",
             tr("Quit"),
             tr("Quit Albert"),
             icon_urls,
-            {
-                {
-                    "quit",
-                    tr("Quit"),
-                    [](){ App::instance()->quit(); }
-                }
-            }),
+            {{
+                "quit", tr("Quit"), []{ App::instance()->quit(); }
+            }}),
 
         StandardItem::make(
             "restart",
             tr("Restart"),
             tr("Restart Albert"),
             icon_urls,
-            {
-                {
-                    "restart",
-                    tr("Restart"),
-                    [](){ App::instance()->restart(); }
-                }
-            }),
+            {{
+                "restart", tr("Restart"), []{ App::instance()->restart(); }
+            }}),
 
         StandardItem::make(
             "cache",
             tr("Cache location"),
             tr("Albert cache location"),
             icon_urls,
-            {
-                {
-                    "cache", tr("Open"),
-                    []{ albert::openUrl(QUrl::fromLocalFile(albert::cacheLocation())); }
-                },
-            }),
+            {{
+                "cache", tr("Open"), []{ openUrl(QUrl::fromLocalFile(cacheLocation().c_str())); }
+            }}),
 
         StandardItem::make(
             "config",
             tr("Config location"),
             tr("Albert config location"),
             icon_urls,
-            {
-                {
-                    "config", tr("Open"),
-                    [](){ albert::openUrl(QUrl::fromLocalFile(albert::configLocation())); }
-                },
-            }),
+            {{
+                "config", tr("Open"), []{ openUrl(QUrl::fromLocalFile(configLocation().c_str())); }
+            }}),
 
         StandardItem::make(
             "data",
             tr("Data location"),
             tr("Albert data location"),
             icon_urls,
-            {
-                {
-                    "data", tr("Open"),
-                    [](){ albert::openUrl(QUrl::fromLocalFile(albert::dataLocation())); }
-                },
-            }),
+            {{
+                "data", tr("Open"), []{ openUrl(QUrl::fromLocalFile(dataLocation().c_str())); }
+            }}),
     };
 }
 

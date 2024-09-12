@@ -27,7 +27,7 @@ public:
     QString subtext() const override
     {
         QString state;
-        if (plugin_.state() == Plugin::State::Loaded)
+        if (plugin_.state == Plugin::State::Loaded)
         {
             static const auto tr_loaded = PluginQueryHandler::tr("Loaded");
             state = tr_loaded;
@@ -38,15 +38,15 @@ public:
             state = tr_unloaded;
         }
 
-        if (!plugin_.stateInfo().isEmpty())
-            state.append(QString(" (%1)").arg(plugin_.stateInfo()));
+        if (!plugin_.state_info.isEmpty())
+            state.append(QString(" (%1)").arg(plugin_.state_info));
 
         static const auto tr_config = PluginQueryHandler::tr("Configuration");
         static const auto tr_enabled = PluginQueryHandler::tr("Enabled");
         static const auto tr_disabled = PluginQueryHandler::tr("Disabled");
         static const auto tr_state = PluginQueryHandler::tr("State");
         return QString("%1: %2, %3: %4")
-            .arg(tr_config, plugin_.isEnabled() ? tr_enabled : tr_disabled,
+            .arg(tr_config, plugin_.enabled ? tr_enabled : tr_disabled,
                  tr_state, state);
     }
 
@@ -55,11 +55,11 @@ public:
 
     QStringList iconUrls() const override
     {
-        if(!plugin_.isEnabled())
+        if(!plugin_.enabled)
             return {QStringLiteral("gen:?&text=🧩&fontscalar=0.7")};
-        else if (plugin_.state() == Plugin::State::Loaded)
+        else if (plugin_.state == Plugin::State::Loaded)
             return {QStringLiteral("gen:?&text=🧩&fontscalar=0.7&background=#4000A000")};
-        else if (plugin_.stateInfo().isEmpty())
+        else if (plugin_.state_info.isEmpty())
             return {QStringLiteral("gen:?&text=🧩&fontscalar=0.7&background=#4000A0A0")};
         else
             return {QStringLiteral("gen:?&text=🧩&fontscalar=0.7&background=#40FF0000")};
@@ -70,58 +70,40 @@ public:
         vector<Action> actions;
 
         static const auto tr_open_settings = PluginQueryHandler::tr("Open settings");
-        actions.emplace_back(
-            "settings",
-            tr_open_settings,
-            [this](){ showSettings(id()); }
-            );
+        actions.emplace_back("settings", tr_open_settings, [this]{ showSettings(id()); });
 
-        if (plugin_.isEnabled())
+        if (plugin_.enabled)
         {
             static const auto tr_disable = PluginQueryHandler::tr("Disable");
-            actions.emplace_back(
-                "disable",
-                tr_disable,
-                [this]() { plugin_registry_.disable(plugin_.id()); }
-                );
+            actions.emplace_back("disable", tr_disable,
+                                 [this]{ plugin_registry_.setEnabled(plugin_.id(), false); });
         }
         else
         {
             static const auto tr_enable = PluginQueryHandler::tr("Enable");
-            actions.emplace_back(
-                "enable",
-                tr_enable,
-                [this]() { plugin_registry_.enable(plugin_.id()); }
-                );
+            actions.emplace_back("enable", tr_enable,
+                                 [this]{ plugin_registry_.setEnabled(plugin_.id(), true); });
         }
 
-        if (plugin_.state() == Plugin::State::Loaded)
+        if (plugin_.state == Plugin::State::Loaded)
         {
             if (plugin_.isUser())
             {
                 static const auto tr_unload = PluginQueryHandler::tr("Unload");
-                actions.emplace_back(
-                    "unload",
-                    tr_unload,
-                    [this](){ plugin_registry_.unload(id()); }
-                    );
+                actions.emplace_back("unload", tr_unload,
+                                     [this]{ plugin_registry_.unload(id()); });
 
                 static const auto tr_reload = PluginQueryHandler::tr("Reload");
-                actions.emplace_back(
-                    "reload",
-                    tr_reload,
-                    [this](){ plugin_registry_.unload(id()); plugin_registry_.load(id()); }
-                    );
+                actions.emplace_back("reload", tr_reload, [this]{
+                    plugin_registry_.unload(id());
+                    plugin_registry_.load(id());
+                });
             }
         }
         else  // by contract only unloaded
         {
             static const auto tr_load = PluginQueryHandler::tr("Load");
-            actions.emplace_back(
-                "load",
-                tr_load,
-                [this](){ plugin_registry_.load(id()); }
-                );
+            actions.emplace_back("load", tr_load, [this]{ plugin_registry_.load(id()); });
         }
 
         return actions;
@@ -132,7 +114,7 @@ public:
 PluginQueryHandler::PluginQueryHandler(PluginRegistry &plugin_registry) : plugin_registry_(plugin_registry)
 {
     QObject::connect(&plugin_registry_, &PluginRegistry::pluginsChanged,
-                     &plugin_registry_, [this](){ updateIndexItems(); });
+                     &plugin_registry_, [this]{ updateIndexItems(); });
 }
 
 QString PluginQueryHandler::id() const

@@ -72,7 +72,6 @@ set(LIB_PUBLIC_HEADER
     include/albert/extension.h
     include/albert/extensionplugin.h
     include/albert/extensionregistry.h
-    include/albert/extensionwatcher.h
     include/albert/fallbackhandler.h
     include/albert/frontend.h
     include/albert/globalqueryhandler.h
@@ -138,6 +137,7 @@ set(LIB_SRC
     src/plugin/plugin.cpp
     src/plugin/plugin.h
     src/plugin/plugininstance.cpp
+    src/plugin/plugininstance_p.h
     src/plugin/pluginloader.cpp
     src/plugin/pluginprovider.cpp
     src/plugin/pluginregistry.cpp

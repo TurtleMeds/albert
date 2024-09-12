@@ -75,8 +75,7 @@ vector<PluginLoader*> QtPluginProvider::plugins()
 {
     vector<PluginLoader*> plugins;
     for (const auto &pl : plugin_loaders_)
-        if (pl->metaData().load_type == PluginMetaData::LoadType::User)
-            plugins.emplace_back(pl.get());
+        plugins.emplace_back(pl.get());
     return plugins;
 }
 

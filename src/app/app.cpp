@@ -9,8 +9,6 @@
 #include "messagehandler.h"
 #include "platform.h"
 #include "plugininstance.h"
-#include "pluginloader.h"
-#include "pluginmetadata.h"
 #include "pluginqueryhandler.h"
 #include "pluginregistry.h"
 #include "pluginswidget.h"
@@ -25,6 +23,8 @@
 #include "triggersqueryhandler.h"
 #include "util.h"
 #include <QCommandLineParser>
+#include <QDir>
+#include <QFile>
 #include <QHotkey>
 #include <QLibraryInfo>
 #include <QMenu>
@@ -35,6 +35,7 @@
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
 #include <QTranslator>
+#include <ranges>
 #ifdef Q_OS_UNIX
 #include "platform/unix/unixsignalhandler.h"
 #endif
@@ -60,17 +61,17 @@ class App::Private
 {
 public:
 
-    Private(const QStringList &additional_plugin_paths, bool load_enabled);
+    Private(const QStringList &additional_plugin_paths);
 
-    void initialize();
+    void initialize(bool load_enabled);
     void finalize();
 
     void initTrayIcon();
     void initTelemetry();
     void initHotkey();
     void initPRC();
-    void loadAnyFrontend();
-    QString loadFrontend(albert::PluginLoader *loader);
+    void loadFrontend();
+    bool loadFrontend(const QString &id);
     void notifyVersionChange();
 
 public:
@@ -84,12 +85,11 @@ public:
     // Core
     albert::ExtensionRegistry extension_registry;
     PluginRegistry plugin_registry;
-    QtPluginProvider plugin_provider;
     QueryEngine query_engine;
+    QtPluginProvider plugin_provider;
+    albert::Frontend *frontend{nullptr};
 
     // Weak, lazy or optional
-    albert::PluginLoader *frontend_plugin{nullptr};
-    albert::Frontend *frontend{nullptr};
     std::unique_ptr<QHotkey> hotkey{nullptr};
     std::unique_ptr<Telemetry> telemetry{nullptr};
     std::unique_ptr<QSystemTrayIcon> tray_icon{nullptr};
@@ -103,18 +103,23 @@ public:
 };
 
 
-App::Private::Private(const QStringList &additional_plugin_paths, bool load_enabled):
-    plugin_registry(extension_registry, load_enabled),
-    plugin_provider(additional_plugin_paths),
+App::Private::Private(const QStringList &additional_plugin_paths):
+    plugin_registry(extension_registry),
     query_engine(extension_registry),
+    plugin_provider(additional_plugin_paths),
     plugin_query_handler(plugin_registry),
     triggers_query_handler(query_engine) {}
 
-void App::Private::initialize()
+void App::Private::initialize(bool load_enabled)
 {
     platform::initPlatform();
 
-    loadAnyFrontend();
+    extension_registry.registerExtension(&app_query_handler);
+    extension_registry.registerExtension(&plugin_query_handler);
+    extension_registry.registerExtension(&triggers_query_handler);
+    extension_registry.registerExtension(&plugin_provider);  // register plugins
+
+    loadFrontend();
 
     platform::initNativeWindow(frontend->winId());
 
@@ -138,10 +143,8 @@ void App::Private::initialize()
 
     initHotkey();  // Connect hotkey after! frontend has been loaded else segfaults
 
-    extension_registry.registerExtension(&app_query_handler);
-    extension_registry.registerExtension(&plugin_query_handler);
-    extension_registry.registerExtension(&triggers_query_handler);
-    extension_registry.registerExtension(&plugin_provider);  // loads plugins
+
+    plugin_registry.setAutoloadEnabledPlugins(load_enabled);  // loads plugins
 }
 
 void App::Private::finalize()
@@ -163,11 +166,6 @@ void App::Private::finalize()
     extension_registry.deregisterExtension(&plugin_query_handler);
     extension_registry.deregisterExtension(&app_query_handler);
 
-    try {
-        frontend_plugin->unload();
-    } catch (const exception &e) {
-        WARN << e.what();
-    }
 }
 
 void App::Private::initTrayIcon()
@@ -303,59 +301,40 @@ void App::Private::initPRC()
     rpc_server.setPRC(::move(rpc));
 }
 
-void App::Private::loadAnyFrontend()
+void App::Private::loadFrontend()
 {
-    auto frontend_plugins = plugin_provider.frontendPlugins();
+    // Load configured frontend or default if unset
+    if (loadFrontend(settings()->value(CFG_FRONTEND_ID, DEF_FRONTEND_ID).toString()))
+        return;
 
-    auto cfg_frontend = settings()->value(CFG_FRONTEND_ID, DEF_FRONTEND_ID).toString();
-    DEBG << QString("Try loading the configured frontend '%1'.").arg(cfg_frontend);
-    if (auto it = find_if(frontend_plugins.begin(), frontend_plugins.end(),
-                          [&](const PluginLoader *loader){ return cfg_frontend == loader->metaData().id; });
-        it != frontend_plugins.end())
-        if (auto err = loadFrontend(*it); err.isNull())
-            return;
-        else {
-            WARN << QString("Loading configured frontend plugin '%1' failed: %2.").arg(cfg_frontend, err);
-            frontend_plugins.erase(it);
-        }
-    else
-        WARN << QString("Configured frontend plugin '%1' does not exist.").arg(cfg_frontend);
+    // Load any frontend
+    auto frontend_plugins = plugin_registry.plugins()
+            | views::values
+            | views::filter([](auto &p){ return p.isFrontend(); });
 
-    for (auto &loader : frontend_plugins){
-        DEBG << QString("Try loading frontend plugin '%1'.").arg(loader->metaData().id);;
-        if (auto err = loadFrontend(loader); err.isNull()){
-            INFO << QString("Using '%1' as fallback.").arg(loader->metaData().id);
+    for (const auto &plugin : frontend_plugins)
+        if (loadFrontend(plugin.id()))
             return;
-        } else
-            WARN << QString("Failed loading frontend plugin '%1'.").arg(loader->metaData().id);
-    }
 
     qFatal("Could not load any frontend.");
 }
 
-QString App::Private::loadFrontend(PluginLoader *loader)
+bool App::Private::loadFrontend(const QString &id)
 {
     try {
-        PluginRegistry::staticDI.loader = loader;
-        loader->load();
-
-        plugin_registry.staticDI.loader = loader;
-        auto * inst = loader->createInstance();
-        if (!inst)
-            return "Plugin loader returned null instance";
-
-        frontend = dynamic_cast<Frontend*>(loader->createInstance());
-        if (!frontend)
-            return QString("Failed casting Plugin instance to albert::Frontend: %1").arg(loader->metaData().id);
-
-        frontend_plugin = loader;
-
-        return {};
-    } catch (const exception &e) {
-        return QString::fromStdString(e.what());
-    } catch (...) {
-        return "Unknown exception";
+        auto &p = plugin_registry.plugins().at(id);
+        DEBG << QString("Loading frontend '%1'.").arg(id);
+        plugin_registry.load(id);
+        if (p.state != Plugin::State::Loaded)
+            WARN << QString("Failed loading frontend '%1': %2").arg(p.id(), p.state_info);
+        else if (frontend = dynamic_cast<Frontend*>(p.instance); !frontend)
+            WARN << QString("Failed casting Plugin instance to albert::Frontend: %1").arg(p.id());
+        else
+            return true;
+    } catch (const out_of_range&) {
+        WARN << QString("Frontend plugin '%1' does not exist.").arg(id);
     }
+    return false;
 }
 
 void App::Private::notifyVersionChange()
@@ -389,20 +368,20 @@ void App::Private::notifyVersionChange()
 }
 
 
-App::App(const QStringList &additional_plugin_paths, bool load_enabled)
+App::App(const QStringList &additional_plugin_paths)
 {
     if (app_instance)
         qFatal("No multiple app instances allowed");
 
     app_instance = this; // must be valid before Private is constructed
-    d = make_unique<Private>(additional_plugin_paths, load_enabled);
+    d = make_unique<Private>(additional_plugin_paths);
 }
 
 App::~App() = default;
 
 App *App::instance() { return app_instance; }
 
-void App::initialize() { return d->initialize(); }
+void App::initialize(bool load_enabled) { return d->initialize(load_enabled); }
 
 void App::finalize() { return d->finalize(); }
 
@@ -425,42 +404,22 @@ void App::show(const QString &text)
     d->frontend->setVisible(true);
 }
 
-void App::hide()
-{
-    d->frontend->setVisible(false);
-}
+void App::hide() { d->frontend->setVisible(false); }
 
-void App::toggle()
-{
-    d->frontend->setVisible(!d->frontend->isVisible());
-}
+void App::toggle() { d->frontend->setVisible(!d->frontend->isVisible()); }
 
 void App::restart()
-{
-    QMetaObject::invokeMethod(qApp, "exit", Qt::QueuedConnection, Q_ARG(int, -1));
-}
+{ QMetaObject::invokeMethod(qApp, "exit", Qt::QueuedConnection, Q_ARG(int, -1)); }
 
-void App::quit()
-{
-    QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection);
-}
+void App::quit() { QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection); }
+
+ExtensionRegistry &App::extensionRegistry() { return d->extension_registry; }
 
 Frontend *App::frontend() { return d->frontend; }
 
-QString App::currentFrontend() { return d->frontend_plugin->metaData().name; }
-
-QStringList App::availableFrontends()
+void App::setFrontend(const QString &id)
 {
-    QStringList ret;
-    for (const auto *loader : d->plugin_provider.frontendPlugins())
-        ret << loader->metaData().name;
-    return ret;
-}
-
-void App::setFrontend(uint i)
-{
-    auto fp = d->plugin_provider.frontendPlugins().at(i);
-    settings()->setValue(CFG_FRONTEND_ID, fp->metaData().id);
+    settings()->setValue(CFG_FRONTEND_ID, id);
 
     auto text = tr("Changing the frontend requires a restart. "
                    "Do you want to restart Albert?");
@@ -522,7 +481,6 @@ void App::setHotkey(unique_ptr<QHotkey> hk)
         WARN << "Set unregistered hotkey. Ignoring.";
 }
 
-
 namespace albert
 {
 
@@ -568,11 +526,12 @@ int ALBERT_EXPORT run(int argc, char **argv)
     // Initialize app directories
 
     for (const auto &path : { cacheLocation(), configLocation(), dataLocation() })
-    {
-        if (!QDir(path).mkpath("."))
-            qFatal("Failed creating config dir at: %s", qPrintable(path));
-        QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
-    }
+        try {
+            tryCreateDirectory(path);
+            QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+        } catch (...) {
+            qFatal("Failed creating config dir at: %s", path.c_str());
+        }
 
 
     // Section for ports
@@ -670,13 +629,12 @@ int ALBERT_EXPORT run(int argc, char **argv)
         for (const auto &line : report())
             DEBG << line;
 
-        new App(parser.value(opt_p).split(',', Qt::SkipEmptyParts), !parser.isSet(opt_n));
+        new App(parser.value(opt_p).split(',', Qt::SkipEmptyParts));
+        app_instance->initialize(!parser.isSet(opt_n));
     }
 
 
     // Run app
-
-    app_instance->initialize();
 
     int return_value = qApp->exec();
 

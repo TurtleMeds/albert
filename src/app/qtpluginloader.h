@@ -14,11 +14,10 @@ public:
     QtPluginLoader(const QString &path);
     ~QtPluginLoader();
 
-    QString path() const override;
-    const albert::PluginMetaData &metaData() const override;
-    void load() override;
+    QString path() const noexcept override;
+    const albert::PluginMetaData &metaData() const noexcept override;
+    albert::PluginInstance &load() override;
     void unload() override;
-    albert::PluginInstance *createInstance() override;
 
 private:
 

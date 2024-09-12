@@ -104,23 +104,22 @@ void PluginsWidget::onUpdatePluginWidget()
                                                .arg(p.metaData().name, p.metaData().description)));
 
     // Plugin specific
-    if (p.state() == Plugin::State::Loaded)
+    if (p.state == Plugin::State::Loaded)
     {
         // Config widget
-        if (auto *inst = p.instance(); inst)
-            if (auto *cw = inst->buildConfigWidget())
-            {
-                if (auto * cwl = cw->layout())
-                    cwl->setContentsMargins(0,0,0,0);
-                vl->addWidget(cw, 1); // Strech=1
-            }
+        if (auto *cw = p.buildConfigWidget())
+        {
+            if (auto * cwl = cw->layout())
+                cwl->setContentsMargins(0,0,0,0);
+            vl->addWidget(cw, 1); // Strech=1
+        }
     }
-    else if (!p.stateInfo().isEmpty())
+    else if (!p.state_info.isEmpty())
     {
         // Unloaded info
-        if (!p.stateInfo().isEmpty())
+        if (!p.state_info.isEmpty())
         {
-            l = new QLabel(p.stateInfo());
+            l = new QLabel(p.state_info);
             l->setWordWrap(true);
             vl->addWidget(l);
         }
@@ -161,7 +160,7 @@ void PluginsWidget::onUpdatePluginWidget()
                             tr("Authors: %1", nullptr, authors.size()).arg(authors.join(", ")));
 
     // Dependencies
-    if (const auto &list = p.dependencies(); !list.empty())
+    if (const auto &list = p.dependencies; !list.empty())
     {
         QStringList names;
         for (const auto &d : list)
@@ -170,7 +169,7 @@ void PluginsWidget::onUpdatePluginWidget()
     }
 
     // Dependees
-    if (const auto &list = p.dependees(); !list.empty())
+    if (const auto &list = p.dependees; !list.empty())
     {
         QStringList names;
         for (const auto &d : list)
@@ -191,7 +190,7 @@ void PluginsWidget::onUpdatePluginWidget()
     }
 
     // Provider
-    meta << tr("%1, Interface: %2").arg(p.provider->name(), p.metaData().iid);
+    meta << tr("%1, Interface: %2").arg(p.provider.name(), p.metaData().iid);
 
     // Path
     meta << p.path();

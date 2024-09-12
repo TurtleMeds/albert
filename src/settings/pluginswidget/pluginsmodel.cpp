@@ -7,12 +7,21 @@
 #include <QIcon>
 #include <QPalette>
 #include <QStyle>
+#include <ranges>
 using namespace albert;
 using namespace std;
 
 PluginsModel::PluginsModel(PluginRegistry &plugin_registry) : plugin_registry_(plugin_registry)
 {
-    connect(&plugin_registry, &PluginRegistry::pluginsChanged, this, &PluginsModel::updatePluginList);
+    connect(&plugin_registry, &PluginRegistry::pluginsChanged,
+            this, &PluginsModel::updatePluginList);
+
+    connect(&plugin_registry_, &PluginRegistry::pluginStateChanged,
+            this, &PluginsModel::updateView);
+
+    connect(&plugin_registry_, &PluginRegistry::pluginEnabledChanged,
+            this, &PluginsModel::updateView);
+
     updatePluginList();
 }
 
@@ -41,15 +50,15 @@ QVariant PluginsModel::data(const QModelIndex &index, int role) const
     case Qt::CheckStateRole:
         if (p.isUser())
         {
-            if (p.state() == Plugin::State::Busy)
+            if (p.state == Plugin::State::Loading)
                 return Qt::PartiallyChecked;
             else
-                return p.isEnabled() ? Qt::Checked : Qt::Unchecked;
+                return p.enabled ? Qt::Checked : Qt::Unchecked;
         }
         break;
 
     case Qt::DecorationRole:
-        if (p.state() == Plugin::State::Unloaded && !p.stateInfo().isNull())
+        if (p.state == Plugin::State::Unloaded && !p.state_info.isNull())
             return QApplication::style()->standardIcon(QStyle::SP_MessageBoxCritical);
         break;
 
@@ -57,12 +66,12 @@ QVariant PluginsModel::data(const QModelIndex &index, int role) const
         return p.metaData().name;
 
     case Qt::ForegroundRole:
-        if (p.state() != Plugin::State::Loaded)
+        if (p.state != Plugin::State::Loaded)
             return qApp->palette().color(QPalette::PlaceholderText);
         break;
 
     case Qt::ToolTipRole:
-        return p.stateInfo();
+        return p.state_info;
 
     case Qt::UserRole:
         return p.id();
@@ -78,9 +87,9 @@ bool PluginsModel::setData(const QModelIndex &index, const QVariant &value, int 
             if (auto &p = *plugins_[index.row()]; p.isUser())
             {
                 if (value == Qt::Checked)
-                    plugin_registry_.enable(p.id());
+                    plugin_registry_.setEnabled(p.id(), true);
                 else if (value == Qt::Unchecked)
-                    plugin_registry_.disable(p.id());
+                    plugin_registry_.setEnabled(p.id(), false);
             }
         }
         catch (out_of_range &e){}
@@ -91,11 +100,10 @@ bool PluginsModel::setData(const QModelIndex &index, const QVariant &value, int 
 Qt::ItemFlags PluginsModel::flags(const QModelIndex &idx) const
 {;
     if (idx.isValid()){
-        switch (auto &p = *plugins_[idx.row()]; p.state())
+        switch (auto &p = *plugins_[idx.row()]; p.state)
         {
-        case Plugin::State::Invalid:
-            return Qt::ItemNeverHasChildren;
-        case Plugin::State::Busy:
+        case Plugin::State::Loading:
+        case Plugin::State::Unloading:
             return Qt::ItemNeverHasChildren | Qt::ItemIsSelectable | Qt::ItemIsEnabled;
         case Plugin::State::Loaded:
         case Plugin::State::Unloaded:
@@ -109,16 +117,11 @@ void PluginsModel::updatePluginList()
 {
     beginResetModel();
 
-    plugins_.clear();
+    auto v = plugin_registry_.plugins() | views::values
+            | views::transform([](auto &p){ return &p; });
+    plugins_ = { begin(v), end(v) };
 
-    for (auto &[id, loader] : plugin_registry_.plugins()){
-        plugins_.emplace_back(&loader);
-        connect(&loader, &Plugin::stateChanged, this, &PluginsModel::updateView, Qt::UniqueConnection);
-        connect(&loader, &Plugin::enabledChanged, this, &PluginsModel::updateView, Qt::UniqueConnection);
-    }
-
-    ::sort(plugins_.begin(), plugins_.end(),
-           [](const auto &l, const auto &r){ return l->metaData().name < r->metaData().name; });
+    ranges::sort(plugins_, [](auto &l, auto &r){ return l->metaData().name < r->metaData().name; });
 
     endResetModel();
 }
