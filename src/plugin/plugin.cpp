@@ -1,12 +1,12 @@
 // Copyright (c) 2024 Manuel Schneider
 
+#include "albert.h"
 #include "logging.h"
 #include "plugin.h"
 #include "plugininstance.h"
 #include "plugininstance_p.h"
 #include "pluginloader.h"
 #include "pluginmetadata.h"
-#include "util.h"
 #include <QRegularExpression>
 #include <QSettings>
 #include <chrono>

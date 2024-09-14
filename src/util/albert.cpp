@@ -1,8 +1,9 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
+#include "albert.h"
 #include "app.h"
 #include "logging.h"
-#include "util.h"
+#include "albert.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QDesktopServices>
@@ -13,15 +14,19 @@
 #include <QProcess>
 #include <QSettings>
 #include <QStandardPaths>
-#include <memory>
+using namespace albert;
 using namespace std;
+extern App * app;
 
 
-QNetworkAccessManager *albert::network()
-{
-    static QNetworkAccessManager network_manager;
-    return &network_manager;
-}
+void albert::restart()
+{ QMetaObject::invokeMethod(qApp, "exit", Qt::QueuedConnection, Q_ARG(int, -1)); }
+
+void albert::quit()
+{ QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection); }
+
+void albert::showSettings(QString plugin_id)
+{ app->showSettings(plugin_id); }
 
 inline static filesystem::path getFilesystemPath(QStandardPaths::StandardLocation loc)
 { return filesystem::path(QStandardPaths::writableLocation(loc).toStdString()); }
@@ -44,23 +49,34 @@ unique_ptr<QSettings> albert::settings()
 unique_ptr<QSettings> albert::state()
 { return settingsFromPath(cacheLocation() / "state"); }
 
-void albert::showSettings(QString plugin_id)
-{ App::instance()->showSettings(plugin_id); }
+const ExtensionRegistry &albert::extensionRegistry()
+{ return app->extensionRegistry(); }
 
-void albert::openUrl(const QString &url)
-{ openUrl(QUrl(url)); }
+QNetworkAccessManager &albert::network()
+{
+    static thread_local QNetworkAccessManager network_manager;
+    return network_manager;
+}
 
-void albert::openUrl(const QUrl &url)
+void albert::openUrl(const QString &url) { open(QUrl(url)); }
+
+void albert::open(const QUrl &url)
 {
     DEBG << QString("Opening URL '%1'").arg(url.toString());
+
     if (qApp->platformName() == "wayland")
         runDetachedProcess({"xdg-open", url.toString()});
     else if (!QDesktopServices::openUrl(url))
         WARN << "Failed opening URL" << url;
 }
 
+void albert::open(const QString &path) { open(QUrl::fromLocalFile(path)); }
+
+void albert::open(const string &path) { open(QString::fromStdString(path)); }
+
 void albert::openWebsite()
 {
+    open(std::filesystem::path());
     static const char *website_url = "https://albertlauncher.github.io/";
     QDesktopServices::openUrl(QUrl(website_url));
 }
@@ -156,6 +172,3 @@ void albert::tryCreateDirectory(const filesystem::path& path)
                     .arg(e.path1().c_str(), e.what()).toStdString());
     }
 }
-
-const albert::ExtensionRegistry &albert::extensionRegistry()
-{ return App::instance()->extensionRegistry(); }

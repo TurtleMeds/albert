@@ -3,9 +3,9 @@
 
 #pragma once
 #include <QCoreApplication>
+#include <albert/albert.h>
 #include <albert/export.h>
 #include <albert/extensionregistry.h>
-#include <albert/util.h>
 #include <albert/logging.h>
 
 namespace albert

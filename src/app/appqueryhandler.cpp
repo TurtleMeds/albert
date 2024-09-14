@@ -1,10 +1,9 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "app.h"
+#include "albert.h"
 #include "appqueryhandler.h"
 #include "matcher.h"
 #include "standarditem.h"
-#include "util.h"
 #include <QString>
 #include <QUrl>
 using namespace albert;
@@ -21,7 +20,7 @@ AppQueryHandler::AppQueryHandler()
             tr("Albert settings"),
             icon_urls,
             {{
-                "sett", tr("Open"), []{ App::instance()->showSettings(); }
+                "sett", tr("Open"), []{ showSettings(); }
             }}),
 
         StandardItem::make(
@@ -30,7 +29,7 @@ AppQueryHandler::AppQueryHandler()
             tr("Quit Albert"),
             icon_urls,
             {{
-                "quit", tr("Quit"), []{ App::instance()->quit(); }
+                "quit", tr("Quit"), []{ quit(); }
             }}),
 
         StandardItem::make(
@@ -39,7 +38,7 @@ AppQueryHandler::AppQueryHandler()
             tr("Restart Albert"),
             icon_urls,
             {{
-                "restart", tr("Restart"), []{ App::instance()->restart(); }
+                "restart", tr("Restart"), []{ restart(); }
             }}),
 
         StandardItem::make(
@@ -48,7 +47,7 @@ AppQueryHandler::AppQueryHandler()
             tr("Albert cache location"),
             icon_urls,
             {{
-                "cache", tr("Open"), []{ openUrl(QUrl::fromLocalFile(cacheLocation().c_str())); }
+                "cache", tr("Open"), []{ open(cacheLocation()); }
             }}),
 
         StandardItem::make(
@@ -57,7 +56,7 @@ AppQueryHandler::AppQueryHandler()
             tr("Albert config location"),
             icon_urls,
             {{
-                "config", tr("Open"), []{ openUrl(QUrl::fromLocalFile(configLocation().c_str())); }
+                "config", tr("Open"), []{ open(configLocation()); }
             }}),
 
         StandardItem::make(
@@ -66,7 +65,7 @@ AppQueryHandler::AppQueryHandler()
             tr("Albert data location"),
             icon_urls,
             {{
-                "data", tr("Open"), []{ openUrl(QUrl::fromLocalFile(dataLocation().c_str())); }
+                "data", tr("Open"), []{ open(dataLocation()); }
             }}),
     };
 }

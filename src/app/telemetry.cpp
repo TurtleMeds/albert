@@ -1,8 +1,8 @@
 // Copyright (C) 2014-2024 Manuel Schneider
 
+#include "albert.h"
 #include "logging.h"
 #include "telemetry.h"
-#include "util.h"
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QGuiApplication>
@@ -37,7 +37,7 @@ void Telemetry::trySendReport()
 
         QNetworkRequest request((QUrl(addr)));
         request.setHeader(QNetworkRequest::ContentTypeHeader, QString("application/json"));
-        QNetworkReply* reply = network()->put(request, QJsonDocument(object).toJson(QJsonDocument::Compact));
+        QNetworkReply* reply = network().put(request, QJsonDocument(object).toJson(QJsonDocument::Compact));
         QObject::connect(reply, &QNetworkReply::finished, [reply](){
             if (reply->error() == QNetworkReply::NoError){
                 DEBG << "Report sent.";

@@ -68,6 +68,7 @@ set(LIB_PUBLIC_HEADER
     ${PROJECT_BINARY_DIR}/include/albert/export.h  # generated
 
     include/albert/action.h
+    include/albert/albert.h
     include/albert/backgroundexecutor.h
     include/albert/extension.h
     include/albert/extensionplugin.h
@@ -94,7 +95,6 @@ set(LIB_PUBLIC_HEADER
     include/albert/rankitem.h
     include/albert/standarditem.h
     include/albert/triggerqueryhandler.h
-    include/albert/util.h
 )
 
 set(LIB_SRC
@@ -132,6 +132,7 @@ set(LIB_SRC
     src/frontend/session.h
 
     src/platform/platform.h
+    src/platform/signalhandler.h
 
     src/plugin/extensionregistry.cpp
     src/plugin/plugin.cpp
@@ -170,6 +171,7 @@ set(LIB_SRC
     src/settings/settingswindow.cpp
     src/settings/settingswindow.h
 
+    src/util/albert.cpp
     src/util/extensionplugin.cpp
     src/util/iconprovider.cpp
     src/util/indexitem.cpp
@@ -181,7 +183,6 @@ set(LIB_SRC
     src/util/matcher.cpp
     src/util/notification.cpp
     src/util/standarditem.cpp
-    src/util/util.cpp
 
     src/config.h.in
 )
@@ -201,10 +202,9 @@ else()  # assume xdg
 endif()
 
 if (UNIX)
-    list(APPEND LIB_SRC
-        src/platform/unix/unixsignalhandler.cpp
-        src/platform/unix/unixsignalhandler.h
-    )
+    list(APPEND LIB_SRC src/platform/unix/signalhandler.cpp)
+elseif()
+    list(APPEND LIB_SRC src/platform/win/signalhandler.cpp)
 endif()
 
 set(LIB_UI
