@@ -1,7 +1,6 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
 #include "albert.h"
-#include "app.h"
 #include "appqueryhandler.h"
 #include "matcher.h"
 #include "standarditem.h"

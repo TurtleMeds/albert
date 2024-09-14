@@ -13,8 +13,9 @@
 #include <QProcess>
 #include <QSettings>
 #include <QStandardPaths>
-#include <memory>
+using namespace albert;
 using namespace std;
+extern App * app;
 
 
 void albert::restart()
@@ -23,11 +24,8 @@ void albert::restart()
 void albert::quit()
 { QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection); }
 
-QNetworkAccessManager &albert::network()
-{
-    static thread_local QNetworkAccessManager network_manager;
-    return network_manager;
-}
+void albert::showSettings(QString plugin_id)
+{ app->showSettings(plugin_id); }
 
 inline static filesystem::path getFilesystemPath(QStandardPaths::StandardLocation loc)
 { return filesystem::path(QStandardPaths::writableLocation(loc).toStdString()); }
@@ -50,15 +48,21 @@ unique_ptr<QSettings> albert::settings()
 unique_ptr<QSettings> albert::state()
 { return settingsFromPath(cacheLocation() / "state"); }
 
-void albert::showSettings(QString plugin_id)
-{ App::instance()->showSettings(plugin_id); }
+const ExtensionRegistry &albert::extensionRegistry()
+{ return app->extensionRegistry(); }
+
+QNetworkAccessManager &albert::network()
+{
+    static thread_local QNetworkAccessManager network_manager;
+    return network_manager;
+}
 
 void albert::openUrl(const QString &url)
 {
     if (QUrl qurl(url); qurl.isValid())
         open(QUrl(url));
     else
-        WARN << "Invalid URL" << url << qurl.errorString();
+        WARN << "Failed to parse URL" << url << qurl.errorString();
 }
 
 void albert::open(const QUrl &url)
@@ -77,8 +81,7 @@ void albert::open(const string &path) { open(QString::fromStdString(path)); }
 
 void albert::openWebsite()
 {
-    static const char *website_url = "https://albertlauncher.github.io/";
-    QDesktopServices::openUrl(QUrl(website_url));
+    openUrl("https://albertlauncher.github.io/");
 }
 
 void albert::setClipboardText(const QString &text)
@@ -161,9 +164,6 @@ long long albert::runDetachedProcess(const QStringList &commandline, const QStri
         WARN << "runDetachedProcess: commandline must not be empty!";
     return pid;
 }
-
-const albert::ExtensionRegistry &albert::extensionRegistry()
-{ return App::instance()->extensionRegistry(); }
 
 void albert::tryCreateDirectory(const filesystem::path& path)
 {

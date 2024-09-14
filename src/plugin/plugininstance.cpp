@@ -26,14 +26,14 @@ filesystem::path PluginInstance::configLocation() const
 filesystem::path PluginInstance::dataLocation() const
 { return albert::dataLocation() / d->loader.metaData().id.toStdString(); }
 
-unique_ptr<QSettings> albert::PluginInstance::settings() const
+unique_ptr<QSettings> PluginInstance::settings() const
 {
     auto s = albert::settings();
     s->beginGroup(d->loader.metaData().id);
     return s;
 }
 
-unique_ptr<QSettings> albert::PluginInstance::state() const
+unique_ptr<QSettings> PluginInstance::state() const
 {
     auto s = albert::state();
     s->beginGroup(d->loader.metaData().id);
