@@ -6,11 +6,9 @@
 #include <QString>
 #include <albert/export.h>
 #include <albert/matchconfig.h>
-class MatcherPrivate;
 
 namespace albert
 {
-class Item;
 
 ///
 /// The Match class.
@@ -26,19 +24,32 @@ class ALBERT_EXPORT Match final
 public:
     using Score = double;
 
-    Match() : score_(-1.) {}
-    Match(const Score score) : score_(score) {}
-    Match(const Match &o) = default;
-    Match(Match &&o) = default;
-    Match &operator=(const Match &o) = default;
-    Match &operator=(Match &&o) = default;
+    /// Constructs a Match with the given `score`.
+    Match(const Score score) noexcept : score_(score) {}
 
-    inline operator bool() const { return isMatch(); }
-    inline explicit operator Score() const { return score_; }
+    /// Constructs a Match with the score of `other`.
+    Match(const Match &other) noexcept = default;
+
+    /// Replaces the score with that of `other`.
+    Match &operator=(const Match &other) noexcept = default;
+
+    /// Returns `true` if this is a match.
     inline bool isMatch() const { return score_ >= 0.0; }
+
+    /// Returns `true` if this is a zero score match.
     inline bool isEmptyMatch() const { return qFuzzyCompare(score_, 0.0); }
+
+    /// Returns `true` if this is a perfect match.
     inline bool isExactMatch() const { return qFuzzyCompare(score_, 1.0); }
+
+    /// Returns the score.
     inline Score score() const { return score_; }
+
+    /// Type conversion to `bool` using isMatch().
+    inline operator bool() const { return isMatch(); }
+
+    /// Type conversion to `Score` using score().
+    inline explicit operator Score() const { return score_; }
 
 private:
 
@@ -47,27 +58,40 @@ private:
 
 
 ///
-/// The Matcher class.
+/// A utility class that provides configurable string matching.
 ///
-/// Use this class to get unified user experience in match behavior.
-///
-/// @note Experimental WIP
+/// @sa MatchConfig
 ///
 class ALBERT_EXPORT Matcher final
 {
 public:
 
-    Matcher(const QString &query, MatchConfig config = {});
-    Matcher(Matcher &&o);
-    Matcher &operator=(Matcher &&o);
+    ///
+    /// Constructs a Matcher with the given `string` and match `config`.
+    ///
+    /// If `config` is not provided, a default constructed MatchConfig is used.
+    ///
+    Matcher(const QString &string, MatchConfig config = {}) noexcept;
+
+    /// Constructs a Matcher with the contents of `other` using move semantics.
+    Matcher(Matcher &&o) noexcept;
+
+    /// Replaces the contents with those of `other` using move semantics.
+    Matcher &operator=(Matcher &&o) noexcept;
+
+    /// Destructs the Matcher.
     ~Matcher();
 
-    Match match(const Item &item) const;
+    /// Returns the string matched against.
+    const QString &string() const;
+
+    /// Returns a Match for the string `string` and the string of this Matcher.
     Match match(const QString &string) const;
 
 private:
 
-    std::unique_ptr<MatcherPrivate> d;
+    class Private;
+    std::unique_ptr<Private> d;
 
 };
 

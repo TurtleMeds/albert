@@ -40,12 +40,13 @@ void TriggersQueryHandler::handleTriggerQuery(Query *q)
 
     for (const auto &[trigger, handler] : query_engine_.activeTriggerHandlers())
     {
-        Match m;
-        for (const auto &s : {trigger, handler->name(), handler->id()})
-            if (auto _m = matcher.match(s); m < _m)
-                m = _m;
+        auto m = std::max({
+            matcher.match(trigger),
+            matcher.match(handler->name()),
+            matcher.match(handler->id())
+        });
 
-        if (m.isMatch())
+        if (m)
             RI.emplace_back(make_item(trigger, handler), m);
     }
 

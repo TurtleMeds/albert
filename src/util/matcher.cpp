@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Manuel Schneider
 
-#include "item.h"
 #include "levenshtein.h"
 #include "matchconfig.h"
 #include "matcher.h"
@@ -9,7 +8,7 @@
 using namespace albert;
 using namespace std;
 
-class MatcherPrivate
+class Matcher::Private
 {
 public:
 
@@ -101,21 +100,21 @@ public:
     }
 };
 
-Matcher::Matcher(const QString &query, MatchConfig config):
-    d(new MatcherPrivate{
+Matcher::Matcher(const QString &string, MatchConfig config) noexcept:
+    d(new Private{
       .config = ::move(config),
-      .string = query,
+      .string = string,
       .levenshtein = {},
       .tokens = {}
     })
 { d->updateTokens(); }
 
-Matcher::Matcher(Matcher &&o) = default;
+Matcher::Matcher(Matcher &&o) noexcept = default;
+
+Matcher &Matcher::operator=(Matcher &&o) noexcept = default;
 
 Matcher::~Matcher() = default;
 
-Matcher &Matcher::operator=(Matcher &&o) = default;
-
-Match Matcher::match(const Item &item) const { return d->match(item.text()); }
+const QString &Matcher::string() const { return d->string; }
 
 Match Matcher::match(const QString &s) const { return d->match(s); }
