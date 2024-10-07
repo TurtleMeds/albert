@@ -31,12 +31,12 @@ static shared_ptr<Item> make_item(const QString &trigger, Extension * handler)
     );
 }
 
-void TriggersQueryHandler::handleTriggerQuery(Query *q)
+void TriggersQueryHandler::handleTriggerQuery(Query &q)
 {
     // Match tigger, id and name.
 
     vector<RankItem> RI;
-    Matcher matcher(q->string());
+    Matcher matcher(q.string());
 
     for (const auto &[trigger, handler] : query_engine_.activeTriggerHandlers())
     {
@@ -59,16 +59,16 @@ void TriggersQueryHandler::handleTriggerQuery(Query *q)
     for (auto &ri : RI)
         I.emplace_back(::move(ri.item));
 
-    q->add(I);
+    q.add(I);
 }
 
-vector<RankItem> TriggersQueryHandler::handleGlobalQuery(const Query *q)
+vector<RankItem> TriggersQueryHandler::handleGlobalQuery(const Query &q)
 {
     // Strictly match trigger
 
     vector<RankItem> rank_items;
 
-    Matcher matcher(q->string(), { .ignore_case=false, .ignore_word_order=false });
+    Matcher matcher(q.string(), { .ignore_case=false, .ignore_word_order=false });
     for (const auto &[trigger, handler] : query_engine_.activeTriggerHandlers())
         if (auto m = matcher.match(trigger); m)
             rank_items.emplace_back(make_item(trigger, handler), m);
