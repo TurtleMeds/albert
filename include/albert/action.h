@@ -9,26 +9,23 @@
 namespace albert
 {
 
-///
-/// Action used by result items (Item).
-///
 class ALBERT_EXPORT Action final
 {
 public:
 
-    /// Action constructor
-    /// \param id Identifier of the action.
-    /// \param text Description of the action.
-    /// \param function The action function.
+    /// Constructs an Action with the contents initialized with the data passed.
+    /// \param id @copybrief Action::id
+    /// \param text @copybrief Action::text
+    /// \param function @copybrief Action::function
     Action(QString id, QString text, std::function<void()> function) noexcept;
 
-    /// The identifier of the action.
+    /// The action identifier.
     QString id;
 
-    /// The description of the action.
+    /// The action title.
     QString text;
 
-    /// The action function.
+    /// The action function executed on activation.
     std::function<void()> function;
 };
 

@@ -58,7 +58,7 @@ public:
     virtual void add(std::vector<std::shared_ptr<Item>> &&items) = 0;
 
     ///
-    /// Sets the QueryExecution::canFetchMore() flag of the query to `true`.
+    /// Sets the canFetchMore flag of the query to `true`.
     ///
     virtual void setCanFetchMore() = 0;
 

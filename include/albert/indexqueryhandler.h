@@ -11,47 +11,60 @@
 namespace albert
 {
 
-/// Index query handler class.
+///
 /// A GlobalQueryHandler providing implicit indexing and matching.
-/// You just have to provide your items with lookup strings.
+///
 class ALBERT_EXPORT IndexQueryHandler : public GlobalQueryHandler
 {
 public:
-    IndexQueryHandler();
-
-    /// Returns "True"
+    ///
+    /// Returns `true`.
+    ///
     bool supportsFuzzyMatching() const override;
 
-    /// Set the fuzzy mode of the internal index.
-    /// Triggers a rebuild by calling updateIndexItems.
+    ///
+    /// Sets the fuzzy matching mode to `enabled` and triggers updateIndexItems().
+    ///
     void setFuzzyMatching(bool) override;
 
-    /// Uses the index to override GlobalQueryHandler::handleGlobalQuery
+    ///
+    /// Returns the matching items from the index.
+    ///
     std::vector<RankItem> handleGlobalQuery(const Query &) override;
 
-    /// Update the index.
-    /// Called when the index needs to be updated, i.e. for initialization
-    /// and on user changes to the index config (fuzzy, etc…) and probably by
-    /// the client itself if the items changed. This function should call
-    /// setIndexItems(std::vector<IndexItem>&&) to update the index.
-    /// @note Don't call this method in the constructor. It will be called on plugin
+    ///
+    /// Updates the index.
+    ///
+    /// Called when the index needs to be updated, i.e. for initialization, on user changes to the
+    /// index config (fuzzy, etc…) and probably by the client itself if the items changed. This
+    /// function should call setIndexItems(std::vector<IndexItem>&&) to update the index.
+    ///
+    /// @note Do not call this method in the constructor. It will be called on plugin
     /// initialization.
+    ///
     virtual void updateIndexItems() = 0;
 
-    /// Set the items of the index.
-    /// Call this in updateIndexItems().
-    /// @threadsafe
-    void setIndexItems(std::vector<IndexItem>&&);
+    ///
+    /// Sets the items of the index.
+    ///
+    /// Intended to be called in updateIndexItems().
+    ///
+    void setIndexItems(std::vector<IndexItem> &&);
 
 protected:
+    ///
+    /// Constructs an index query handler.
+    ///
+    IndexQueryHandler();
 
+    ///
+    /// Destructs the index query handler.
+    ///
     ~IndexQueryHandler() override;
 
 private:
-
     class Private;
     std::unique_ptr<Private> d;
-
 };
 
-}
+}  // namespace albert

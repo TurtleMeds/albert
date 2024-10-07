@@ -26,53 +26,66 @@ class ALBERT_EXPORT PluginInstance
 {
 public:
 
-    /// The widget used to configure the plugin in the settings.
-    /// @returns The config widget.
+    ///
+    /// Creates a widget that can be used to configure the plugin properties.
+    ///
+    /// The caller takes ownership of the returned object.
+    ///
     virtual QWidget *buildConfigWidget();
 
-    /// The extensions provided by this plugin.
-    /// @returns Weak references to the extensions.
-    /// @since 0.27
+    ///
+    /// Returns the extensions provided by this plugin.
+    ///
+    /// The caller does not take ownership of the returned objects.
+    ///
     virtual std::vector<albert::Extension*> extensions();
 
 public:
 
-    /// The PluginLoader of this instance.
-    /// @returns @copybrief loader
-    /// @since 0.24
+    ///
+    /// Returns the loader of this plugin.
+    ///
     [[nodiscard]] const PluginLoader &loader() const;
 
-    /// The recommended cache location.
-    /// @returns @copybrief cacheLocation
-    /// @since 0.27
+    ///
+    /// Returns the recommended cache location for this plugin.
+    ///
     [[nodiscard]] std::filesystem::path cacheLocation() const;
 
-    /// The recommended config location.
-    /// @returns @copybrief configLocation
-    /// @since 0.27
+    ///
+    /// Returns the recommended config location for this plugin.
+    ///
     [[nodiscard]] std::filesystem::path configLocation() const;
 
-    /// The recommended data location.
-    /// @returns @copybrief dataLocation
-    /// @since 0.27
+    ///
+    /// Returns the recommended data location for this plugin.
+    ///
     [[nodiscard]] std::filesystem::path dataLocation() const;
 
-    /// Persistent plugin settings.
-    /// Preconfigured according to albert conventions, i.e. using
-    /// albert::settings() configured to write to a section titled <plugin-id>.
-    /// @returns Preconfigured QSettings object for config storage.
+    ///
+    /// Creates a preconfigured QSettings object for plugin config data.
+    ///
+    /// Configured to use the group <plugin-id> in albert::config().
+    ///
     [[nodiscard]] std::unique_ptr<QSettings> settings() const;
 
-    /// Persistent plugin state.
-    /// Preconfigured according to albert conventions, i.e. using
-    /// albert::state() configured to write to a section titled <plugin-id>.
-    /// @since 0.23
-    /// @returns Preconfigured QSettings object for state storage.
+    ///
+    /// Creates a preconfigured QSettings object for plugin state data.
+    ///
+    /// Configured to use the group <plugin-id> in albert::state().
+    ///
     [[nodiscard]] std::unique_ptr<QSettings> state() const;
 
 protected:
 
+    ///
+    /// Constructs a plugin instance.
+    ///
     PluginInstance();
+
+    ///
+    /// Destructs a plugin instance.
+    ///
     virtual ~PluginInstance();
 
 private:

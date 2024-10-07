@@ -24,31 +24,49 @@ class ALBERT_EXPORT Match final
 public:
     using Score = double;
 
+    ///
     /// Constructs a Match with the given `score`.
+    ///
     Match(const Score score) noexcept : score_(score) {}
 
+    ///
     /// Constructs a Match with the score of `other`.
+    ///
     Match(const Match &other) noexcept = default;
 
+    ///
     /// Replaces the score with that of `other`.
+    ///
     Match &operator=(const Match &other) noexcept = default;
 
-    /// Returns `true` if this is a match.
+    ///
+    /// Returns `true` if this is a match, otherwise returns `false`.
+    ///
     inline bool isMatch() const { return score_ >= 0.0; }
 
-    /// Returns `true` if this is a zero score match.
+    ///
+    /// Returns `true` if this is a zero score match, otherwise returns `false`.
+    ///
     inline bool isEmptyMatch() const { return qFuzzyCompare(score_, 0.0); }
 
-    /// Returns `true` if this is a perfect match.
+    ///
+    /// Returns `true` if this is a perfect match, otherwise returns `false`.
+    ///
     inline bool isExactMatch() const { return qFuzzyCompare(score_, 1.0); }
 
+    ///
     /// Returns the score.
+    ///
     inline Score score() const { return score_; }
 
-    /// Type conversion to `bool` using isMatch().
+    ///
+    /// Converts the match to `bool` using isMatch().
+    ///
     inline operator bool() const { return isMatch(); }
 
-    /// Type conversion to `Score` using score().
+    ///
+    /// Converts the match to `Score` using score().
+    ///
     inline explicit operator Score() const { return score_; }
 
 private:
@@ -73,19 +91,29 @@ public:
     ///
     Matcher(const QString &string, MatchConfig config = {}) noexcept;
 
+    ///
     /// Constructs a Matcher with the contents of `other` using move semantics.
+    ///
     Matcher(Matcher &&o) noexcept;
 
+    ///
     /// Replaces the contents with those of `other` using move semantics.
+    ///
     Matcher &operator=(Matcher &&o) noexcept;
 
+    ///
     /// Destructs the Matcher.
+    ///
     ~Matcher();
 
+    ///
     /// Returns the string matched against.
+    ///
     const QString &string() const;
 
+    ///
     /// Returns a Match for the string `string` and the string of this Matcher.
+    ///
     Match match(const QString &string) const;
 
 private:

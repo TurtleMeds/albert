@@ -2,5 +2,4 @@
 
 #include "query.h"
 
-// vtable in lib
 albert::Query::~Query() = default;

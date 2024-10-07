@@ -2,5 +2,4 @@
 
 #include "pluginloader.h"
 
-// vtable in lib
 albert::PluginLoader::~PluginLoader() = default;

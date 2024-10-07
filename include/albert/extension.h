@@ -18,20 +18,28 @@ namespace albert
 class ALBERT_EXPORT Extension
 {
 public:
+    ///
+    /// Returns the extension identifier.
+    ///
+    /// @note To avoid naming conflicts use the namespace of your plugin, e.g. files (root
+    /// extension), files.rootbrowser, files.homebrowser, …
+    ///
+    [[nodiscard]] virtual QString id() const = 0;
 
-    /// The identifier of this extension.
-    /// @note To avoid naming conflicts use the namespace of your plugin,
-    /// e.g. files (root extension), files.rootbrowser, files.homebrowser, …
-    virtual QString id() const = 0;
+    ///
+    /// Returns the pretty, human readable extension name.
+    ///
+    [[nodiscard]] virtual QString name() const = 0;
 
-    /// Pretty, human readable name
-    virtual QString name() const = 0;
-
-    /// Brief description of this extension
-    virtual QString description() const = 0;
+    ///
+    /// Returns the brief extension description.
+    ///
+    [[nodiscard]] virtual QString description() const = 0;
 
 protected:
-
+    ///
+    /// Destructs the extension.
+    ///
     virtual ~Extension();
 
 };

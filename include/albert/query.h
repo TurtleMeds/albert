@@ -8,22 +8,32 @@
 namespace albert
 {
 
+///
 /// The global query execution interface class.
+///
 class ALBERT_EXPORT Query
 {
 public:
+    ///
     /// Returns the trigger of this query.
+    ///
     virtual QString trigger() const = 0;
 
+    ///
     /// Returns the query string.
+    ///
     virtual QString string() const = 0;
 
-    /// Returns `true` if the query has been cancelled or invalidated.
+    ///
+    /// Returns `false` if the query has been cancelled or invalidated, otherwise returns `true`.
+    ///
     virtual bool isValid() const = 0;
 
 protected:
 
+    ///
     /// Destructs the query.
+    ///
     virtual ~Query();
 };
 

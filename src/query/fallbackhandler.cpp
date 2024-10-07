@@ -2,5 +2,4 @@
 
 #include "fallbackhandler.h"
 
-// vtable goes here
 albert::FallbackHandler::~FallbackHandler() = default;

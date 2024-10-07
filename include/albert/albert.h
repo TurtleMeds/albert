@@ -15,168 +15,118 @@ namespace albert
 class ExtensionRegistry;
 
 ///
-/// Restart the application.
-///
-/// @since 0.27
+/// Restarts the application.
 ///
 void restart();
 
 ///
-/// Quit the application.
-///
-/// @since 0.27
+/// Quits the application.
 ///
 void quit();
 
 ///
-/// Open/Show the settings window (of plugin).
-///
-/// @param plugin_id Id of the plugin whose settings should be displayed.
+/// Creates and/or shows the settings window. If `plugin_id` is not empty, shows the plugins tab and
+/// selects the plugin having the `plugin_id`.
 ///
 ALBERT_EXPORT void showSettings(QString plugin_id = {});
 
 ///
-/// The app cache location.
-///
-/// The path to the directory where cache files should be stored.
+/// Returns the path to the directory where cache files should be stored (app cache location).
 ///
 ALBERT_EXPORT std::filesystem::path cacheLocation();
 
 ///
-/// The app config location.
-///
-/// The path to the directory where configuration files should be stored.
-///
-/// @return The app config location.
-/// @since 0.27
+/// Returns the path to the directory where config files should be stored (app config location).
 ///
 ALBERT_EXPORT std::filesystem::path configLocation();
 
 ///
-/// The app data location.
-///
-/// The path to the directory where data files should be stored.
-///
-/// @return The app data location.
-/// @since 0.27
+/// Returns the path to the directory where data files should be stored (app data location).
 ///
 ALBERT_EXPORT std::filesystem::path dataLocation();
 
 ///
-/// Persistent app settings storage.
-///
-/// @return Preconfigured QSettings object for configuration storage.
+/// Creates a QSettings object for app config data.
 ///
 ALBERT_EXPORT std::unique_ptr<QSettings> settings();
 
 ///
-/// The persistent app state storage.
-///
-/// @return Preconfigured QSettings object for state storage.
+/// Creates a QSettings object for app state data.
 ///
 ALBERT_EXPORT std::unique_ptr<QSettings> state();
 
 ///
-/// The extension registry.
+/// Returns the global extension registry.
 ///
 /// Utilze to look up extensions or watch for changes. Const because registering plugins via this
 /// registry is not allowed. Use PluginInstance::extensions().
 ///
-/// See also WeakDependency and StrongDependency.
-///
-/// @returns A const reference to the extension registry.
-/// @since 0.27
+/// @see WeakDependency and StrongDependency.
 ///
 ALBERT_EXPORT const ExtensionRegistry &extensionRegistry();
 
 ///
-/// The threadlocal, global QNetworkAccessManager.
-///
-/// \returns A reference to the QNetworkAccessManager object.
-/// \since 0.27
+/// Returns the threadlocal, global QNetworkAccessManager.
 ///
 ALBERT_EXPORT QNetworkAccessManager &network();
 
 ///
-/// Open the albert website in default browser.
+/// Opens the albert website in the default browser.
 ///
 ALBERT_EXPORT void openWebsite();
 
 ///
-/// Open URL with default handler.
-///
-/// \param url The url to open.
+/// Opens the URL `url` with the default URL handler.
 ///
 ALBERT_EXPORT void openUrl(const QString &url);
 
 ///
-/// Open URL with default handler.
-///
-/// \param url The url to open.
-/// \since 0.27
+/// Open the URL `url` with the default url handler.
 ///
 ALBERT_EXPORT void open(const QUrl &url);
 
 ///
-/// Open file with default handler.
-///
-/// \param path The path the file to open.
-/// \since 0.27
+/// Opens the file at `path` with the default application.
 ///
 ALBERT_EXPORT void open(const QString &path);
 
 ///
-/// Open file with default handler.
-///
-/// Convenience overlaod that works well with filesystem::path.
-///
-/// \param path The path the file to open.
-/// \since 0.27
+/// Opens the file at `path` with the default application.
 ///
 ALBERT_EXPORT void open(const std::string &path);
 
 ///
-/// Set the system clipboard.
-///
-/// \param text The text to set
+/// Sets the system clipboard to `text`.
 ///
 ALBERT_EXPORT void setClipboardText(const QString &text);
 
 ///
-/// Check paste support of the platform.
+/// Returns `true` if the platform supports pasting, otherwise returns `false`.
 ///
-/// \return True if requirements for setClipboardTextAndPaste(…) are met.
-/// \since 0.24
+/// @note This is a requirement for setClipboardTextAndPaste(…) to work.
 ///
 ALBERT_EXPORT bool havePasteSupport();
 
 ///
-/// Set the system clipboard and paste the content to the front-most window.
+/// Sets the system clipboard to `text` and paste the content to the front-most window.
 ///
-/// Check albert::havePasteSupport before using this function.
-///
-/// \param text The text to set and paste
+/// @note Requires paste support. Check havePasteSupport() before using this function.
 ///
 ALBERT_EXPORT void setClipboardTextAndPaste(const QString &text);
 
 ///
-/// Run a detached process.
-///
-/// \param commandline The command line to run
-/// \param working_dir The working directory
-/// \return The process id
+/// Starts the `commandline` in a new process, and detaches from it. Returns the PID on success;
+/// otherwise returns 0. The process will be started in the directory `working_dir`. If
+/// `working_dir` is empty, the working directory is the users home directory.
 ///
 ALBERT_EXPORT long long runDetachedProcess(const QStringList &commandline, const QString &working_dir = {});
 
 ///
-/// Create a directory if it does not exist yet.
+/// Creates a directory at `path` if it does not exist yet.
 ///
 /// This is a utility function for use with the *Location functions.
 ///
-/// @param path The path to the directory to create.
-/// @returns The existing directory.
 /// @throws std::runtime_error if the directory could not be created.
-/// @since 0.27
 ///
 ALBERT_EXPORT void tryCreateDirectory(const std::filesystem::path &path);
 

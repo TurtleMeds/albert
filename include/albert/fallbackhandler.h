@@ -14,20 +14,20 @@ namespace albert
 class Item;
 
 ///
-/// Abstract fallback provider.
-///
-/// Use this if you want to add items to the fallbacks
-/// shown if a query yielded no results
+/// Abstract fallback item provider.
 ///
 class ALBERT_EXPORT FallbackHandler : virtual public Extension
 {
 public:
-
-    /// Fallbacks provided by this handler
-    virtual std::vector<std::shared_ptr<Item>> fallbacks(const QString &) const = 0;
+    ///
+    /// Returns fallback items for `query`.
+    ///
+    virtual std::vector<std::shared_ptr<Item>> fallbacks(const QString &query) const = 0;
 
 protected:
-
+    ///
+    /// Destructs the fallback handler.
+    ///
     ~FallbackHandler() override;
 
 };

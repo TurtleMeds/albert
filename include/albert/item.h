@@ -9,51 +9,58 @@
 
 namespace albert
 {
-
-///
-/// Result items displayed in the query results list
-///
 class ALBERT_EXPORT Item
 {
 public:
 
+    /// Destructs the item.
     virtual ~Item();
 
-    /// Getter for the item identifier.
     ///
-    /// Has to be unique per extension.
+    /// Returns the item identifier.
     ///
-    /// This function is involved in several time critical operartion such as
-    /// indexing and sorting. It is therefore recommended to return a string
-    /// that is as short as possible as fast as possible.
-    virtual QString id() const = 0;
+    /// Has to be unique per extension. This function is involved in several time critical
+    /// operartions such as indexing and sorting. Return a string that is as short as possible as
+    /// fast as possible.
+    ///
+    [[nodiscard]] virtual QString id() const = 0;
 
-    /// Getter for the item text.
     ///
-    /// Primary text displayed emphasized in a list item.
+    /// Returns the item text.
     ///
-    /// This string is used in scoring. It is therefore recommended to return
-    /// as fast as possible. The text length is used as divisor for scoring,
-    /// hence the string must not be empty, otherwise you get undefined
-    /// behavior. For performance reasons text length is not checked.
-    virtual QString text() const = 0;
+    /// Primary text displayed emphasized in a list item. The string must not be empty, since the
+    /// text length is used as divisor for scoring. Return as fast as possible. No checks are
+    /// performed. If empty you get undefined behavior.
+    ///
+    [[nodiscard]] virtual QString text() const = 0;
 
-    /// Getter for the item subtext.
+    ///
+    /// Returns the item subtext.
+    ///
     /// Secondary descriptive text displayed in a list item.
-    virtual QString subtext() const = 0;
+    ///
+    [[nodiscard]] virtual QString subtext() const = 0;
 
-    /// Getter for the items iconUrls.
+    ///
+    /// Returns the item icon urls.
+    ///
     /// Used to get the item icon using the IconProvider.
-    virtual QStringList iconUrls() const = 0;
+    ///
+    [[nodiscard]] virtual QStringList iconUrls() const = 0;
 
-    /// Getter for the input action text.
+    ///
+    /// Returns the item input action text.
+    ///
     /// Used as input text replacement (usually by pressing Tab).
-    virtual QString inputActionText() const;
+    ///
+    [[nodiscard]] virtual QString inputActionText() const;
 
-    /// Getter for item actions.
-    /// These are the actions a users can run.
-    virtual std::vector<Action> actions() const;
-
+    ///
+    /// Returns the item actions.
+    ///
+    /// These are the actions a users can choose to activate.
+    ///
+    [[nodiscard]] virtual std::vector<Action> actions() const;
 };
 
-}
+}  // namespace albert
