@@ -94,9 +94,11 @@ set(LIB_PUBLIC_HEADER
     include/albert/pluginprovider.h
     include/albert/property.h
     include/albert/query.h
+    include/albert/queryexecution.h
     include/albert/rankitem.h
     include/albert/standarditem.h
     include/albert/timeit.h
+    include/albert/triggerquery.h
     include/albert/triggerqueryhandler.h
 )
 
@@ -129,8 +131,6 @@ set(LIB_SRC
 
     src/frontend/frontend.cpp
     src/frontend/inputhistory.cpp
-    src/frontend/itemsmodel.cpp
-    src/frontend/itemsmodel.h
     src/frontend/session.cpp
     src/frontend/session.h
 
@@ -149,12 +149,15 @@ set(LIB_SRC
     src/plugin/topologicalsort.hpp
 
     src/query/fallbackhandler.cpp
+    src/query/globalqueryexecution.cpp
+    src/query/globalqueryexecution.h
     src/query/globalqueryhandler.cpp
     src/query/query.cpp
     src/query/queryengine.cpp
     src/query/queryengine.h
-    src/query/queryexecution.cpp
-    src/query/queryexecution.h
+    src/query/triggerquery.cpp
+    src/query/triggerqueryexecution.cpp
+    src/query/triggerqueryexecution.h
     src/query/triggerqueryhandler.cpp
     src/query/usagedatabase.cpp
     src/query/usagedatabase.h

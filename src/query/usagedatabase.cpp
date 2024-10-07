@@ -25,10 +25,10 @@ static const bool   DEF_PRIO_PERFECT = true;
 
 // Hashing specialization for Key
 template <>
-struct std::hash<Key>
+struct hash<Key>
 {
     // https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key#comment39936543_17017281
-    inline std::size_t operator()(const Key& k) const
+    inline size_t operator()(const Key& k) const
     { return (qHash(k.first) ^ (qHash(k.second)<< 1)); }
 };
 
@@ -53,47 +53,34 @@ void UsageHistory::initialize()
     updateScores();
 }
 
-void UsageHistory::applyScore(const QString &extension_id, RankItem *rank_item)
-{
-    /*
-     *  p  r     | ( 3, 4] |  3 + mru_score      | prioritized recent perfect matches
-     *  p !r     | ( 2, 3] |  2 + 1 / text_len   | prioritized perfect matches
-     * !p  r     | ( 1, 2] |  1 + mru_score      | recent matches
-     * !p !r  m  | ( 0, 1] |  match_score        | matches
-     * !p !r !m  | (-1, 0] |  -1 + 1 / text_len  | no match
-     */
-
-    const Key key(extension_id, rank_item->item->id());
-
-    if (prioritize_perfect_match_ && rank_item->score == 1.0f)
-    {
-        if (const auto &it = usage_scores_.find(key); it != usage_scores_.end())
-            rank_item->score = 3.0f + it->second;
-        else
-            rank_item->score = 2.0f + 1.0f / rank_item->item->text().length();
-    }
-    else
-    {
-        if (const auto &it = usage_scores_.find(key); it != usage_scores_.end())
-            rank_item->score = 1.0f + it->second;
-        else if (rank_item->score == 0.0f)
-            rank_item->score = -1.0f + 1.0f / rank_item->item->text().length();
-        // else score remains unmodified
-    }
-}
-
-void UsageHistory::applyScores(const QString &id, vector<RankItem> &rank_items)
+void UsageHistory::applyScores(const QString &extension_id, vector<RankItem> &rank_items)
 {
     shared_lock lock(global_data_mutex_);
+    pair<QString, QString> key{extension_id, {}};
     for (auto &rank_item : rank_items)
-        applyScore(id, &rank_item);
-}
+    {
+        /*
+         *  p  r     | ( 3, 4] |  3 + mru_score      | prioritized recent perfect matches
+         *  p !r     | ( 2, 3] |  2 + 1 / text_len   | prioritized perfect matches
+         * !p  r     | ( 1, 2] |  1 + mru_score      | recent matches
+         * !p !r  m  | ( 0, 1] |  match_score        | matches
+         * !p !r !m  | (-1, 0] |  -1 + 1 / text_len  | no match
+         */
 
-void UsageHistory::applyScores(vector<pair<Extension *, RankItem>> *rank_items)
-{
-    shared_lock lock(global_data_mutex_);
-    for (auto &[extension, rank_item] : *rank_items)
-        applyScore(extension->id(), &rank_item);
+        key.second = rank_item.item->id();
+
+        const auto &it = usage_scores_.find(key);
+
+        if (prioritize_perfect_match_ && rank_item.score == 1.)
+            if (it == usage_scores_.end())
+                rank_item.score = 2. + 1. / rank_item.item->text().length();
+            else
+                rank_item.score = 3. + it->second;
+        else if (it != usage_scores_.end())
+            rank_item.score = 1. + it->second;
+        else if (rank_item.score == 0.)
+            rank_item.score = -1. + 1. / rank_item.item->text().length();
+    }
 }
 
 double UsageHistory::memoryDecay()
@@ -154,10 +141,7 @@ void UsageHistory::updateScores()
     {
         auto activation = activations[i];
         double weight = pow(memory_decay_, k);
-        if (const auto &[it, success] = usage_weights.emplace(std::piecewise_construct,
-                                                              std::forward_as_tuple(activation.extension_id, activation.item_id),
-                                                              std::forward_as_tuple(weight)); !success)
-            it->second += weight;
+        usage_weights[{activation.extension_id, activation.item_id}] += weight;
     }
 
     // Invert the list. Results in ordered by rank map

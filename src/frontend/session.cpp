@@ -34,5 +34,4 @@ void Session::runQuery(const QString &query_string)
     q->setParent(this);  // important for qml ownership determination
 
     frontend_.setQuery(q.get());
-    q->run();
 }

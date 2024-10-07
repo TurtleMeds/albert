@@ -1,6 +1,5 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "albert.h"
 #include "matcher.h"
 #include "queryengine.h"
 #include "standarditem.h"
@@ -31,12 +30,12 @@ static shared_ptr<Item> make_item(const QString &trigger, Extension * handler)
     );
 }
 
-void TriggersQueryHandler::handleTriggerQuery(Query &q)
+void TriggersQueryHandler::handleTriggerQuery(TriggerQuery &query)
 {
     // Match tigger, id and name.
 
     vector<RankItem> RI;
-    Matcher matcher(q.string());
+    Matcher matcher(query.string());
 
     for (const auto &[trigger, handler] : query_engine_.activeTriggerHandlers())
     {
@@ -50,7 +49,7 @@ void TriggersQueryHandler::handleTriggerQuery(Query &q)
             RI.emplace_back(make_item(trigger, handler), m);
     }
 
-    applyUsageScore(&RI);
+    applyUsageScore(RI);
 
     ranges::sort(RI, greater());
 
@@ -59,7 +58,7 @@ void TriggersQueryHandler::handleTriggerQuery(Query &q)
     for (auto &ri : RI)
         I.emplace_back(::move(ri.item));
 
-    q.add(I);
+    query.add(I);
 }
 
 vector<RankItem> TriggersQueryHandler::handleGlobalQuery(const Query &q)

@@ -3,15 +3,17 @@
 #include "albert.h"
 #include "extensionregistry.h"
 #include "fallbackhandler.h"
+#include "globalqueryexecution.h"
 #include "globalqueryhandler.h"
 #include "logging.h"
 #include "queryengine.h"
-#include "queryexecution.h"
+#include "triggerqueryexecution.h"
 #include "triggerqueryhandler.h"
 #include "usagedatabase.h"
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QSettings>
+#include <ranges>
 using namespace albert;
 using namespace std;
 static const char *CFG_GLOBAL_HANDLER_ENABLED = "global_handler_enabled";
@@ -21,7 +23,7 @@ static const char *CFG_FALLBACK_ITEM = "fallback";
 static const char *CFG_TRIGGER = "trigger";
 static const char *CFG_FUZZY = "fuzzy";
 
-QueryEngine::QueryEngine(ExtensionRegistry &registry) : registry_(registry)
+QueryEngine::QueryEngine(ExtensionRegistry &registry)
 {
     UsageHistory::initialize();
     loadFallbackOrder();
@@ -81,21 +83,32 @@ QueryEngine::QueryEngine(ExtensionRegistry &registry) : registry_(registry)
 
 unique_ptr<QueryExecution> QueryEngine::query(const QString &query_string)
 {
-    vector<FallbackHandler*> fhandlers;
-    for (const auto&[id, handler] : fallback_handlers_)
-        fhandlers.emplace_back(handler);
+    auto it = ranges::find_if(active_triggers_,
+                              [&](const auto &p) { return query_string.startsWith(p.first); });
 
-    for (const auto &[trigger, handler] : active_triggers_)
-        if (query_string.startsWith(trigger))
-            return make_unique<QueryExecution>(this, ::move(fhandlers), handler, query_string.mid(trigger.size()), trigger);
+    unique_ptr<QueryExecution> query;
 
+    if (it == active_triggers_.end())
     {
         vector<albert::GlobalQueryHandler*> handlers;
         for (const auto&[id, h] : global_handlers_)
             if (h.enabled)
                 handlers.emplace_back(h.handler);
-        return make_unique<GlobalQuery>(this, ::move(fhandlers), ::move(handlers), query_string);
+
+        query = make_unique<GlobalQueryExecution>(createFallbacks(query_string),
+                                                  handlers,
+                                                  query_string);
     }
+    else
+    {
+        auto &[trigger, handler] = *it;
+        query = make_unique<TriggerQueryExecution>(createFallbacks(query_string),
+                                                   *handler,
+                                                   trigger,
+                                                   query_string.mid(trigger.size()));
+    }
+
+    return query;
 }
 
 //
@@ -265,3 +278,37 @@ void QueryEngine::loadFallbackOrder()
     for (auto it = o.rbegin(); it != o.rend(); ++it, ++rank)
         fallback_order_.emplace(*it, rank);
 }
+
+vector<ResultItem> QueryEngine::createFallbacks(const QString &query)
+{
+    // Todo this needs better design for now just skip empty queries
+    if (query.isEmpty())
+        return {};
+
+    // Build a list of items associated with their ranks
+    vector<pair<ResultItem, uint>> fallbacks;
+
+    for (const auto &[id, h] : fallback_handlers_)
+    {
+        try{
+            for (auto &item : h->fallbacks(query))
+                if (auto it = fallback_order_.find(make_pair(id, item->id()));
+                    it == fallback_order_.end())
+                    fallbacks.emplace_back(ResultItem(h, ::move(item)), 0);
+                else
+                    fallbacks.emplace_back(ResultItem(h, ::move(item)), it->second);
+        }
+        catch (const exception &e) {
+            WARN << QString("FallbackHandler '%1' threw exception:\n").arg(id) << e.what();
+        }
+        catch (...){
+            CRIT << QString("FallbackHandler '%1' threw unknown exception.").arg(id);
+        }
+    }
+
+    // Sort and project
+    ranges::sort(fallbacks, greater{}, &decltype(fallbacks)::value_type::second);
+    auto v = fallbacks | views::transform(&decltype(fallbacks)::value_type::first);
+    return {v.begin(), v.end()};
+}
+

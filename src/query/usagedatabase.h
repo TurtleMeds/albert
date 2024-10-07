@@ -28,8 +28,7 @@ class UsageHistory
 public:
     static void initialize();
 
-    static void applyScores(const QString &id, std::vector<albert::RankItem> &rank_items);
-    static void applyScores(std::vector<std::pair<albert::Extension*,albert::RankItem>>*);
+    static void applyScores(const QString &extension_id, std::vector<albert::RankItem> &rank_items);
 
     static double memoryDecay();
     static void setMemoryDecay(double);
@@ -41,7 +40,6 @@ public:
                               const QString &item, const QString &action);
 
 private:
-    inline static void applyScore(const QString &extension_id, albert::RankItem *rank_item);
     static void updateScores();
 
     static std::shared_mutex global_data_mutex_;

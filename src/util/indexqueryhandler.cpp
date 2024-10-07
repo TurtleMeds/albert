@@ -16,7 +16,9 @@ public:
     std::shared_mutex index_mutex;
 };
 
-IndexQueryHandler::IndexQueryHandler() : d(new Private()) {}
+IndexQueryHandler::IndexQueryHandler() :
+    d(new Private())
+{}
 
 IndexQueryHandler::~IndexQueryHandler() = default;
 

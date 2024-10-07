@@ -4,11 +4,12 @@
 #include <QObject>
 #include <map>
 #include <memory>
-class QueryExecution;
 namespace albert {
 class ExtensionRegistry;
 class FallbackHandler;
 class GlobalQueryHandler;
+class QueryExecution;
+class ResultItem;
 class TriggerQueryHandler;
 }
 
@@ -20,7 +21,7 @@ public:
 
     QueryEngine(albert::ExtensionRegistry&);
     
-    std::unique_ptr<QueryExecution> query(const QString &query);
+    std::unique_ptr<albert::QueryExecution> query(const QString &query);
 
     std::map<QString, albert::TriggerQueryHandler*> triggerHandlers();
     std::map<QString, albert::GlobalQueryHandler*> globalHandlers();
@@ -46,8 +47,7 @@ private:
     void updateActiveTriggers();
     void saveFallbackOrder() const;
     void loadFallbackOrder();
-
-    albert::ExtensionRegistry &registry_;
+    std::vector<albert::ResultItem> createFallbacks(const QString &query);
 
     struct TriggerQueryHandler {
         TriggerQueryHandler(albert::TriggerQueryHandler *h, QString t, bool f):

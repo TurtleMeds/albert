@@ -3,7 +3,8 @@
 
 #pragma once
 #include <albert/extension.h>
-#include <albert/query.h>
+#include <albert/item.h>
+#include <albert/triggerquery.h>
 
 namespace albert
 {
@@ -47,7 +48,7 @@ public:
 
     /// The trigger query processing function.
     /// @note Executed in a worker thread.
-    virtual void handleTriggerQuery(Query &) = 0;
+    virtual void handleTriggerQuery(TriggerQuery &query) = 0;
 
 protected:
 

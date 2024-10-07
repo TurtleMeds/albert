@@ -9,20 +9,7 @@ class QWidget;
 
 namespace albert
 {
-class Query;
-
-///
-/// Convention on the item roles passed around
-///
-enum class ALBERT_EXPORT ItemRoles
-{
-    TextRole = Qt::DisplayRole,  ///< QString, The text
-    SubTextRole = Qt::UserRole,  ///< QString, The subtext
-    InputActionRole,  ///< QString, The tab action text
-    IconUrlsRole,  ///< QStringList, Urls for icon lookup
-    ActionsListRole,  ///< QStringList, List of action names
-    // Dont change these without changing ItemsModel::roleNames
-};
+class QueryExecution;
 
 
 ///
@@ -56,7 +43,7 @@ public:
     virtual QWidget *createFrontendConfigWidget() = 0;
 
     /// The query setter
-    virtual void setQuery(Query *query) = 0;
+    virtual void setQuery(QueryExecution *query) = 0;
 
 signals:
 

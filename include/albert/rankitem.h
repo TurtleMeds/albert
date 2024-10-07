@@ -17,6 +17,9 @@ namespace albert
 class ALBERT_EXPORT RankItem
 {
 public:
+    /// Constructs a default RankItem.
+    explicit RankItem() noexcept;
+
     /// Constructs a RankItem with the given `item` and `score`.
     explicit RankItem(const std::shared_ptr<Item> &item, double score) noexcept;
 

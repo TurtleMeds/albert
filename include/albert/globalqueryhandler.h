@@ -4,56 +4,63 @@
 #pragma once
 #include <albert/rankitem.h>
 #include <albert/triggerqueryhandler.h>
-#include <memory>
 #include <vector>
 
 namespace albert
 {
+class RankItem;
 
 ///
-/// Abstract global query handler.
+/// Abstract global query handler extension.
 ///
-/// A functional query handler returning scored items. Applicable for the
-/// global search. Use this if you want your results show up in the global
-/// search. Implements TriggeredQueryHandler.
+/// Extensions of this type are used by the global query execution to provide results for global,
+/// untriggered queries. Note that this class implements TriggerQueryHandler.
 ///
-/// @note Do _not_ use this for long running tasks!
+/// @note Do **not** use this for long running tasks. Global query handlers should return fast.
+///
+/// @note handleTriggerQuery(), handleGlobalQuery() and specialItems() are executed in threads. Keep
+/// thread safety in mind!
 ///
 class ALBERT_EXPORT GlobalQueryHandler : public albert::TriggerQueryHandler
 {
 public:
-    /// The query handling function.
-    /// The match score should make sense and often (if not always) be the
-    /// fraction matched chars (legth of query string / length of item title).
-    /// @return A list of match items. Empty query should return all items with
-    /// a score of 0.
-    /// @note Executed in a worker thread.
-    virtual std::vector<RankItem> handleGlobalQuery(const Query &) = 0;
+    ///
+    /// Modifies the score of `items` according to the users usage in place.
+    ///
+    void applyUsageScore(std::vector<RankItem> &items) const;
 
-    /// The empty query handling function.
-    /// Empty patterns match everything. For triggered queries this is desired.
-    /// For global queries it may quickly result in long running queries on show.
-    /// Since a lot of global query handlers relay the handleTriggerQuery to
-    /// handleGlobalQuery it is not possible to have both. This function allows
-    /// extensions to handle empty global queries differently, while still
-    /// yielding all items using the trigger handler.
-    virtual std::vector<std::shared_ptr<Item>> handleEmptyQuery(const Query*);
+    ///
+    /// Adds the scored and sorted results of handleGlobalQuery() to `query`.
+    ///
+    /// If you plan to reimplement this function to get custom behavior for triggered queries, do
+    /// not forget to document this in the settings widget (According to the principle of least
+    /// surprise).
+    ///
+    void handleTriggerQuery(TriggerQuery &query) override;
 
-    /// Takes rank items and modifies the score according to the users usage.
-    /// Use this if you want to reuse your global results in the trigger handler.
-    void applyUsageScore(std::vector<RankItem>*) const;
+    ///
+    /// Returns items that match `query`.
+    ///
+    /// The empty string matches any string. Implementations of handleGlobalQuery() should therefore
+    /// return all available items on empty queries. However the user may choose to alter this
+    /// behavior such that the empty global query is not executed. Despite this configuration there
+    /// may be items of interest for the users. Such items should be returned by the
+    /// handleDisabledEmptyGlobalQuery() function.
+    ///
+    virtual std::vector<RankItem> handleGlobalQuery(const Query &query) = 0;
 
-    /// Implements pure virtual handleTriggerQuery(…).
-    /// Calls handleGlobalQuery, applyUsageScore, sort and adds the items.
-    /// @note Reimplement if the handler should have custom triggered behavior,
-    /// but think twice if this is necessary. It may break user expectation.
-    /// @see handleTriggerQuery and rankItems
-    void handleTriggerQuery(Query &) override;
+    ///
+    /// Returns items that should appear despite disabled empty query execution.
+    ///
+    /// The base class implementation returns an empty list.
+    ///
+    virtual std::vector<std::shared_ptr<Item>> handleDisabledEmptyGlobalQuery();
 
 protected:
-
+    ///
+    /// Destructs the global query handler.
+    ///
     ~GlobalQueryHandler() override;
-
 };
 
-}
+}  // namespace albert
