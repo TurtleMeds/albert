@@ -4,6 +4,7 @@
 #include "globalqueryhandler.h"
 #include <QCoreApplication>
 class QueryEngine;
+class App;
 
 class TriggersQueryHandler : public albert::GlobalQueryHandler
 {
@@ -11,7 +12,7 @@ class TriggersQueryHandler : public albert::GlobalQueryHandler
 
 public:
 
-    TriggersQueryHandler(const QueryEngine &query_engine);
+    TriggersQueryHandler(const QueryEngine &query_engine, App &app);
     QString id() const override;
     QString name() const override;
     QString description() const override;
@@ -20,7 +21,10 @@ public:
 
 private:
 
+    std::shared_ptr<albert::Item> makeItem(const QString &trigger, Extension *handler) const;
+
     static const QStringList icon_urls;
     const QueryEngine &query_engine_;
+    App &app_;
 
 };

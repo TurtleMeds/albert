@@ -2,6 +2,7 @@
 
 #include "app.h"
 #include "matcher.h"
+#include "app.h"
 #include "queryengine.h"
 #include "standarditem.h"
 #include "triggersqueryhandler.h"
@@ -10,8 +11,10 @@ using namespace std;
 
 const QStringList TriggersQueryHandler::icon_urls{QStringLiteral(":app_icon")};
 
-TriggersQueryHandler::TriggersQueryHandler(const QueryEngine &query_engine):
-    query_engine_(query_engine) {}
+TriggersQueryHandler::TriggersQueryHandler(const QueryEngine &query_engine, App &app) :
+    query_engine_(query_engine),
+    app_(app)
+{}
 
 QString TriggersQueryHandler::id() const
 { return QStringLiteral("triggers"); }
@@ -22,12 +25,15 @@ QString TriggersQueryHandler::name() const
 QString TriggersQueryHandler::description() const
 { return tr("Trigger completion items."); }
 
-static shared_ptr<Item> make_item(const QString &trigger, Extension * handler)
+shared_ptr<Item> TriggersQueryHandler::makeItem(const QString &trigger, Extension *handler) const
 {
     auto desc = QString("%1 - %2").arg(handler->name(), handler->description());
     return StandardItem::make(
         trigger, QString(trigger).replace(" ", "•"), desc, trigger,
-        {QStringLiteral("gen:?&text=🚀")}, {}
+        {QStringLiteral("gen:?&text=🚀")},
+        {
+            { "set", "Use", [this, trigger]{ app_.show(trigger); } }
+        }
     );
 }
 
@@ -46,7 +52,7 @@ void TriggersQueryHandler::handleTriggerQuery(Query *q)
                 m = _m;
 
         if (m.isMatch())
-            RI.emplace_back(make_item(trigger, handler), m);
+            RI.emplace_back(makeItem(trigger, handler), m);
     }
 
     applyUsageScore(&RI);
@@ -70,7 +76,7 @@ vector<RankItem> TriggersQueryHandler::handleGlobalQuery(const Query *q)
     Matcher matcher(q->string(), { .ignore_case=false, .ignore_word_order=false });
     for (const auto &[trigger, handler] : query_engine_.activeTriggerHandlers())
         if (auto m = matcher.match(trigger); m)
-            rank_items.emplace_back(make_item(trigger, handler), m);
+            rank_items.emplace_back(makeItem(trigger, handler), m);
 
     return rank_items;
 }
