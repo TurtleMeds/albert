@@ -559,11 +559,12 @@ int ALBERT_EXPORT run(int argc, char **argv)
     // Initialize app directories
 
     for (const auto &path : { cacheLocation(), configLocation(), dataLocation() })
-    {
-        if (!QDir(path).mkpath("."))
-            qFatal("Failed creating config dir at: %s", path.c_str());
-        QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
-    }
+        try {
+            tryCreateDirectory(path);
+            QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+        } catch (...) {
+            qFatal("Failed creating directory: %s", path.c_str());
+        }
 
 
     // Section for ports

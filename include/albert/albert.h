@@ -129,5 +129,16 @@ ALBERT_EXPORT long long runDetachedProcess(const QStringList &commandline, const
 ///
 ALBERT_EXPORT const ExtensionRegistry &extensionRegistry();
 
-} // namespace albert
+///
+/// Create a directory if it does not exist yet.
+///
+/// This is a utility function for use with the *Location functions.
+///
+/// @param path The path to the directory to create.
+/// @returns The existing directory.
+/// @throws std::runtime_error if the directory could not be created.
+/// @since 0.27
+///
+ALBERT_EXPORT void tryCreateDirectory(const std::filesystem::path &path);
 
+} // namespace albert

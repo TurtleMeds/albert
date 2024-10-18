@@ -166,3 +166,14 @@ long long albert::runDetachedProcess(const QStringList &commandline, const QStri
 
 const albert::ExtensionRegistry &albert::extensionRegistry()
 { return App::instance()->extensionRegistry(); }
+
+void albert::tryCreateDirectory(const filesystem::path& path)
+{
+    try {
+        filesystem::create_directories(path);
+    } catch (const filesystem::filesystem_error &e) {
+        throw runtime_error(
+            QCoreApplication::translate("albert", "Failed creating directory %1: %2")
+                .arg(e.path1().c_str(), e.what()).toStdString());
+    }
+}
