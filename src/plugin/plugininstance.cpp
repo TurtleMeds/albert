@@ -66,5 +66,3 @@ unique_ptr<QSettings> albert::PluginInstance::state() const
 const PluginLoader &PluginInstance::loader() const
 { return *d->loader; }
 
-ExtensionRegistry &PluginInstance::registry()
-{ return *d->registry; }

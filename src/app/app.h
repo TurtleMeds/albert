@@ -8,6 +8,7 @@ class QueryEngine;
 class QHotkey;
 namespace albert {
 class Frontend;
+class ExtensionRegistry;
 int run(int, char**);
 }
 
@@ -26,6 +27,7 @@ public:
     void restart();
     void quit();
 
+    albert::ExtensionRegistry &extensionRegistry();
     PluginRegistry &pluginRegistry();
     QueryEngine &queryEngine();
 

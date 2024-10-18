@@ -32,26 +32,16 @@ public:
     void deregisterExtension(Extension*);
 
     /// Get map of all registered extensions
-    const std::map<QString,Extension*> &extensions();
+    const std::map<QString,Extension*> &extensions() const;
 
     /// Get map of all extensions of type T
-    template<typename T> std::map<QString, T*> extensions()
+    template<typename T> std::map<QString, T*> extensions() const
     {
         std::map<QString, T*> results;
         for (auto &[id, extension] : extensions_)
             if (T *t = dynamic_cast<T*>(extension))
                 results.emplace(id, t);
         return results;
-    }
-
-    /// Get extension by id implicitly dynamic_cast'ed to type T.
-    template<typename T> T* extension(const QString &id)
-    {
-        try {
-            return dynamic_cast<T*>(extensions_.at(id));
-        } catch (const std::out_of_range &) {
-            return nullptr;
-        }
     }
 
 signals:
