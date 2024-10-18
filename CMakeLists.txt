@@ -70,6 +70,7 @@ set(LIB_PUBLIC_HEADER
     ${PROJECT_BINARY_DIR}/include/albert/export.h  # generated
 
     include/albert/action.h
+    include/albert/albert.h
     include/albert/backgroundexecutor.h
     include/albert/extension.h
     include/albert/extensionplugin.h
@@ -98,7 +99,6 @@ set(LIB_PUBLIC_HEADER
     include/albert/standarditem.h
     include/albert/timeit.h
     include/albert/triggerqueryhandler.h
-    include/albert/util.h
 )
 
 set(LIB_SRC
@@ -174,6 +174,7 @@ set(LIB_SRC
     src/settings/settingswindow.cpp
     src/settings/settingswindow.h
 
+    src/util/albert.cpp
     src/util/extensionplugin.cpp
     src/util/iconprovider.cpp
     src/util/indexitem.cpp
@@ -185,7 +186,6 @@ set(LIB_SRC
     src/util/matcher.cpp
     src/util/notification.cpp
     src/util/standarditem.cpp
-    src/util/util.cpp
 
     src/config.h.in
 )

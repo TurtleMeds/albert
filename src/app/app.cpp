@@ -24,7 +24,7 @@
 #include "signalhandler.h"
 #include "telemetry.h"
 #include "triggersqueryhandler.h"
-#include "util.h"
+#include "albert.h"
 #include <QCommandLineParser>
 #include <QHotkey>
 #include <QLibraryInfo>

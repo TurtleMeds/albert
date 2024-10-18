@@ -1,8 +1,8 @@
 // Copyright (C) 2014-2024 Manuel Schneider
 
+#include "albert.h"
 #include "logging.h"
 #include "telemetry.h"
-#include "util.h"
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QGuiApplication>
