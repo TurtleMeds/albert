@@ -3,27 +3,21 @@
 #include "globalqueryhandler.h"
 #include "query.h"
 #include "usagedatabase.h"
+#include <ranges>
 using namespace albert;
 using namespace std;
 
 GlobalQueryHandler::~GlobalQueryHandler() = default;
 
-void GlobalQueryHandler::applyUsageScore(vector<RankItem> *rankItems) const
-{ UsageHistory::applyScores(id(), *rankItems); }
+void GlobalQueryHandler::applyUsageScore(std::vector<RankItem> &rank_items) const
+{ UsageHistory::applyScores(id(), rank_items); }
 
-void GlobalQueryHandler::handleTriggerQuery(Query &query)
+void GlobalQueryHandler::handle(ThreadedQueryExecution &exec)
 {
-    auto rank_items = handleGlobalQuery(query);
-    applyUsageScore(&rank_items);
+    auto rank_items = handleGlobalQuery(exec.query);
+    applyUsageScore(rank_items);
     ranges::sort(rank_items, std::greater());
-
-    vector<shared_ptr<Item>> items;
-    items.reserve(rank_items.size());
-    for (auto &match : rank_items)
-        items.push_back(::move(match.item));
-
-    query.add(::move(items));
+    exec.query.add(rank_items | views::transform(&RankItem::item));
 }
 
-vector<shared_ptr<Item>> GlobalQueryHandler::handleEmptyQuery(const Query *)
-{ return {}; }
+vector<shared_ptr<Item>> GlobalQueryHandler::handleEmptyQuery(const Query &) { return {}; }

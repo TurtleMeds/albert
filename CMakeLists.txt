@@ -71,11 +71,13 @@ set(LIB_PUBLIC_HEADER
     include/albert/pluginprovider.h
     include/albert/property.h
     include/albert/query.h
+    include/albert/queryhandler.h
     include/albert/rankitem.h
+    include/albert/session.h
     include/albert/standarditem.h
     include/albert/telemetryprovider.h
-    include/albert/timeit.h
     include/albert/triggerqueryhandler.h
+    include/albert/util.h
 )
 
 set(LIB_SRC
@@ -109,7 +111,6 @@ set(LIB_SRC
     src/frontend/frontend.cpp
     src/frontend/inputhistory.cpp
     src/frontend/session.cpp
-    src/frontend/session.h
 
     src/platform/platform.h
     src/platform/signalhandler.h
@@ -131,6 +132,8 @@ set(LIB_SRC
     src/query/queryengine.h
     src/query/queryexecution.cpp
     src/query/queryexecution.h
+    src/query/queryhandler.cpp
+    src/query/queryhandlerprivate.hpp
     src/query/triggerqueryhandler.cpp
     src/query/usagedatabase.cpp
     src/query/usagedatabase.h

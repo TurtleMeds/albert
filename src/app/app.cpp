@@ -91,7 +91,7 @@ public:
     std::unique_ptr<QHotkey> hotkey{nullptr};
     std::unique_ptr<QSystemTrayIcon> tray_icon{nullptr};
     std::unique_ptr<QMenu> tray_menu{nullptr};
-    std::unique_ptr<Session> session{nullptr};
+    // std::unique_ptr<Session> session{nullptr};
     QPointer<SettingsWindow> settings_window{nullptr};
 
     AppQueryHandler app_query_handler;
@@ -118,14 +118,14 @@ void App::Private::initialize()
 
     platform::initNativeWindow(frontend->winId());
 
-    // Invalidate sessions on handler removal or visibility change
-    auto reset_session = [this]{
-        session.reset();
-        if (frontend->isVisible())
-            session = make_unique<Session>(query_engine, *frontend);
-    };
-    connect(frontend, &Frontend::visibleChanged, app_instance, reset_session);
-    connect(&query_engine, &QueryEngine::handlerRemoved, app_instance, reset_session);
+    // // Invalidate sessions on handler removal or visibility change
+    // auto reset_session = [this]{
+    //     session.reset();
+    //     if (frontend->visible())
+    //         session = make_unique<Session>(query_engine, *frontend);
+    // };
+    // connect(frontend, &Frontend::visibleChanged, app_instance, reset_session);
+    // connect(&query_engine, &QueryEngine::handlerRemoved, app_instance, reset_session);
 
     if (settings()->value(CFG_SHOWTRAY, DEF_SHOWTRAY).toBool())
         initTrayIcon();
@@ -139,9 +139,9 @@ void App::Private::initialize()
     extension_registry.registerExtension(&app_query_handler);
     extension_registry.registerExtension(&plugin_query_handler);
     extension_registry.registerExtension(&triggers_query_handler);
-
+    extension_registry.registerExtension(&plugin_provider);
     // Load plugins not before loop is executing
-    QTimer::singleShot(0, [this] { extension_registry.registerExtension(&plugin_provider); });
+    // QTimer::singleShot(0, this, [this] { extension_registry.registerExtension(&plugin_provider); });
 }
 
 void App::Private::finalize()
@@ -156,7 +156,7 @@ void App::Private::finalize()
     }
 
     delete settings_window.get();
-    session.reset();
+    // session.reset();
 
     extension_registry.deregisterExtension(&plugin_provider);  // unloads plugins
     extension_registry.deregisterExtension(&triggers_query_handler);
@@ -413,7 +413,7 @@ void App::show(const QString &text)
 
 void App::hide() { d->frontend->setVisible(false); }
 
-void App::toggle() { d->frontend->setVisible(!d->frontend->isVisible()); }
+void App::toggle() { d->frontend->setVisible(!d->frontend->visible()); }
 
 void App::restart()
 {
@@ -494,6 +494,7 @@ int ALBERT_EXPORT run(int argc, char **argv)
 
     QLoggingCategory::setFilterRules("*.debug=false");
     qInstallMessageHandler(messageHandler);
+
 
     // Initialize Qt application
 

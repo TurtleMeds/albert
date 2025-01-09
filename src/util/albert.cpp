@@ -3,6 +3,8 @@
 #include "albert.h"
 #include "app.h"
 #include "logging.h"
+#include "queryengine.h"
+#include "session.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QDesktopServices>
@@ -175,3 +177,6 @@ void albert::tryCreateDirectory(const filesystem::path& path)
 
 const albert::ExtensionRegistry &albert::extensionRegistry()
 { return App::instance()->extensionRegistry(); }
+
+unique_ptr<albert::Session> albert::createSession()
+{ return App::instance()->queryEngine().createSession(); }

@@ -13,6 +13,8 @@ class QUrl;
 namespace albert
 {
 class ExtensionRegistry;
+class RankItem;
+class Session;
 
 ///
 /// Restart the application.
@@ -140,6 +142,11 @@ ALBERT_EXPORT const ExtensionRegistry &extensionRegistry();
 /// @since 0.27
 ///
 ALBERT_EXPORT void tryCreateDirectory(const std::filesystem::path &path);
+
+///
+/// Create a session.
+///
+ALBERT_EXPORT std::unique_ptr<Session> createSession();
 
 } // namespace albert
 

@@ -9,7 +9,6 @@ class QWidget;
 
 namespace albert
 {
-class Query;
 
 ///
 /// The interface for albert frontends.
@@ -21,7 +20,7 @@ class ALBERT_EXPORT Frontend : public QObject
 public:
 
     /// Visibility of the frontend
-    virtual bool isVisible() const = 0;
+    virtual bool visible() const = 0;
 
     /// Set the visibility state of the frontend
     virtual void setVisible(bool visible) = 0;
@@ -37,9 +36,6 @@ public:
 
     /// The config widget show in the window settings tab
     virtual QWidget *createFrontendConfigWidget() = 0;
-
-    /// The query setter
-    virtual void setQuery(Query *query) = 0;
 
 signals:
 

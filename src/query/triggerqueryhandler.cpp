@@ -1,18 +1,28 @@
-// Copyright (c) 2023-2024 Manuel Schneider
+// // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "triggerqueryhandler.h"
-using namespace albert;
+// #include "triggerqueryhandler.h"
+// #include "threadedqueryexecution.h"
+// #include <albert/logging.h>
+// #include <QtConcurrent>
+// using namespace albert;
+// using namespace std;
 
-TriggerQueryHandler::~TriggerQueryHandler() = default;
+// TriggerQueryHandler::~TriggerQueryHandler() = default;
 
-QString TriggerQueryHandler::synopsis(const QString &) const { return {}; }
+// ThreadedQueryExecution *TriggerQueryHandler::createQueryExecution(Query &query)
+// {
 
-QString TriggerQueryHandler::defaultTrigger() const { return QString("%1 ").arg(id()); }
+//     struct TriggerQueryHandlerExecution : public ThreadedQueryExecution
+//     {
+//         TriggerQueryHandlerExecution(Query &q, TriggerQueryHandler &h):
+//             ThreadedQueryExecution(q), handler(h) {}
 
-bool TriggerQueryHandler::allowTriggerRemap() const { return true; }
+//         void processThreaded() override final { handler.handleTriggerQuery(query, *this); }
 
-void TriggerQueryHandler::setTrigger(const QString &) {}
+//     private:
+//         TriggerQueryHandler &handler;
+//     };
 
-bool TriggerQueryHandler::supportsFuzzyMatching() const { return false; }
+//     return new TriggerQueryHandlerExecution(query, *this);
 
-void TriggerQueryHandler::setFuzzyMatching(bool) { }
+// }

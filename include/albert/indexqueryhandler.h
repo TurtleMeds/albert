@@ -24,10 +24,10 @@ public:
 
     /// Set the fuzzy mode of the internal index.
     /// Triggers a rebuild by calling updateIndexItems.
-    void setFuzzyMatching(bool) override;
+    void setFuzzy(bool) override;
 
     /// Uses the index to override GlobalQueryHandler::handleGlobalQuery
-    std::vector<RankItem> handleGlobalQuery(const Query &) override;
+    std::vector<RankItem> handleGlobalQuery(const albert::Query &) override;
 
     /// Update the index.
     /// Called when the index needs to be updated, i.e. for initialization

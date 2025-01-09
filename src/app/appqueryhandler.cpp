@@ -4,16 +4,18 @@
 #include "appqueryhandler.h"
 #include "matcher.h"
 #include "standarditem.h"
+#include "query.h"
 #include <QString>
 #include <QUrl>
 using namespace albert;
 using namespace std;
 
+
 const QStringList AppQueryHandler::icon_urls{QStringLiteral(":app_icon")};
 
 AppQueryHandler::AppQueryHandler()
 {
-    items_ = {
+    items = {
         StandardItem::make(
             "sett",
             tr("Settings"),
@@ -70,12 +72,12 @@ QString AppQueryHandler::description() const
 QString AppQueryHandler::defaultTrigger() const
 { return QStringLiteral("albert "); }
 
-vector<RankItem> AppQueryHandler::handleGlobalQuery(const Query &query)
+vector<RankItem> AppQueryHandler::handleGlobalQuery(const Query &q)
 {
-    Matcher matcher(query.string());
-    vector<RankItem> rank_items;
-    for (const auto &item : items_)
-        if (auto m = matcher.match(item->text()); m)
-            rank_items.emplace_back(item, m);
-    return rank_items;
+    vector<RankItem> r;
+    Matcher matcher(q);
+    for (const auto &i : items)
+        if (auto m = matcher.match(i->text()); m)
+            r.emplace_back(i, m);
+    return r;
 }

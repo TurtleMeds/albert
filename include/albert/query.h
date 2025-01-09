@@ -2,16 +2,22 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include <QAbstractListModel>
 #include <QObject>
 #include <QString>
 #include <albert/export.h>
+#include <albert/util.h>
 #include <memory>
+#include <ranges>
 #include <vector>
 
+class QueryEngine;
 namespace albert
 {
 class Item;
+class Extension;
+class QueryHandler;
+class Query;
+class QueryExecution;
 
 class ALBERT_EXPORT ResultItem
 {
@@ -29,60 +35,97 @@ class ALBERT_EXPORT Query : public QObject
 
 public:
 
-    /// The synopsis of this query.
-    Q_INVOKABLE virtual QString synopsis() const = 0;
+    const uint id;
 
-    /// The trigger of this query.
-    Q_INVOKABLE virtual QString trigger() const = 0;
+    /// The trigger that dispatched this handler.
+    const QString trigger;
 
     /// Query string _excluding_ the trigger.
-    Q_INVOKABLE virtual QString string() const = 0;
+    const QString string;
 
-    /// True if the query thread stopped.
-    Q_INVOKABLE virtual bool isFinished() const = 0;
+    const QString synopsis;
 
-    /// True if query has not been cancelled.
-    Q_INVOKABLE virtual const bool &isValid() const = 0;
-
-    /// True if this query has a trigger.
-    Q_INVOKABLE virtual bool isTriggered() const = 0;
-
-    /// Returns the matches.
-    Q_INVOKABLE virtual const std::vector<ResultItem> &matches() = 0;
-
-    /// Returns the fallbacks.
-    Q_INVOKABLE virtual const std::vector<ResultItem> &fallbacks() = 0;
-
-    /// Executes match a match action.
-    Q_INVOKABLE virtual bool activateMatch(uint item, uint action = 0) = 0;
-
-    /// Executes match a fallback action.
-    Q_INVOKABLE virtual bool activateFallback(uint item, uint action = 0) = 0;
-
-    /// Copy add single item.
-    /// @note Use batch add if you can to avoid UI flicker.
-    /// @see add(const std::vector<std::shared_ptr<Item>> &items)
-    virtual void add(const std::shared_ptr<Item> &item) = 0;
-
-    /// Move add single item.
-    /// @note Use batch add if you can to avoid UI flicker.
-    /// @see add(std::vector<std::shared_ptr<Item>> &&items)
-    virtual void add(std::shared_ptr<Item> &&item) = 0;
-
-    /// Copy add multiple items.
-    virtual void add(const std::vector<std::shared_ptr<Item>> &items) = 0;
-
-    /// Move add multiple items.
-    virtual void add(std::vector<std::shared_ptr<Item>> &&items) = 0;
+    ~Query() override;
 
     /// Type conversion to QString
     /// Syntactic sugar for context conversions
-    /// @since 0.24
-    inline operator QString() const { return string(); }
+    operator QString() const;
 
-protected:
+    bool triggered() const;
 
-    ~Query() override;
+    bool global() const;
+
+    const bool &valid() const;
+
+    bool active() const;
+
+    bool canFetchMore() const;
+
+    void fetchMore();
+
+    void cancel();
+
+    /// Returns the matches.
+    const std::vector<ResultItem> &matches() const;
+
+    /// Returns the fallbacks.
+    const std::vector<ResultItem> &fallbacks() const;
+
+    /// Executes a match action.
+    bool activateMatch(uint item, uint action = {});
+
+    /// Executes a fallback action.
+    bool activateFallback(uint item, uint action = {});
+
+    ///
+    /// Add `item` to the results.
+    /// Use range add if you can to avoid UI flicker.
+    ///
+    void add(auto &&item)
+    {
+        if (!valid())
+            return;
+
+        using T = std::decay_t<decltype(item)>;
+        if constexpr (auto l = getLock(); std::same_as<T, ResultItem>)
+            buffer().emplace_back(std::forward<decltype(item)>(item));
+        // Otherwise assume shared_ptr<Item> or derived
+        // else if constexpr (std::is_base_of_v<Item, typename T::element_type>)
+        //     buffer().emplace_back(handler, std::forward<decltype(item)>(item));
+        else
+            static_assert(false, "Query::add: value type not supported.");
+
+        invokeCollectResults();
+    }
+
+    ///
+    /// Add `items` to the results.
+    ///
+    void add(std::ranges::range auto &&items)
+    {
+        if (!valid() || items.empty())
+            return;
+
+        {
+            auto l = getLock();
+
+            auto &b = buffer();
+            b.reserve(b.size() + items.size());
+
+            using T = std::ranges::range_value_t<decltype(items)>;
+            for (auto&& item : items)
+                if constexpr (std::same_as<T, ResultItem>)
+                    b.emplace_back(forward_like<decltype(items)>(item));
+                // Otherwise assume shared_ptr<Item> or derived
+                // else if constexpr (std::is_base_of_v<Item, typename T::element_type>)
+                //     b.emplace_back(handler, forward_like<decltype(items)>(item));
+                else
+                    static_assert(false, "Query::add: value type not supported.");
+        }
+
+        invokeCollectResults();
+    }
+
 
 signals:
 
@@ -97,6 +140,26 @@ signals:
 
     /// Emitted when query processing started or finished.
     void activeChanged(bool active);
-};
 
+protected:
+
+
+private:
+
+    Query(std::unique_ptr<QueryExecution> execution,
+          std::vector<ResultItem> &&fallbacks,
+          const QString &trigger,
+          const QString &string,
+          const QString &synopsis);
+
+    std::lock_guard<std::mutex> getLock();
+    std::vector<ResultItem> &buffer();
+    void invokeCollectResults();
+    void collectResults();
+
+    class Private;
+    std::unique_ptr<Private> d;
+    friend class ::QueryEngine;
+    friend class QueryHandler;
+};
 }

@@ -16,7 +16,10 @@ public:
     std::shared_mutex index_mutex;
 };
 
-IndexQueryHandler::IndexQueryHandler() : d(new Private()) {}
+IndexQueryHandler::IndexQueryHandler() : d(new Private())
+{
+    d->index = make_unique<ItemIndex>();  // null index
+}
 
 IndexQueryHandler::~IndexQueryHandler() = default;
 
@@ -31,12 +34,12 @@ vector<RankItem> IndexQueryHandler::handleGlobalQuery(const Query &query)
 {
     // Pointer check not necessary since never called before setFuzzyMatching
     shared_lock l(d->index_mutex);
-    return d->index->search(query.string(), query.isValid());
+    return d->index->search(query, query.valid());
 }
 
 bool IndexQueryHandler::supportsFuzzyMatching() const { return true; }
 
-void IndexQueryHandler::setFuzzyMatching(bool fuzzy)
+void IndexQueryHandler::setFuzzy(bool fuzzy)
 {
     if (!d->index)
     {

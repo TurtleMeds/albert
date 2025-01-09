@@ -22,8 +22,8 @@ static int column_count = 2;
 
 FallbacksModel::FallbacksModel(QueryEngine &e, QObject *p) : QAbstractTableModel(p), engine(e)
 {
-    connect(&e, &QueryEngine::handlerAdded, this, &FallbacksModel::updateFallbackList);
-    connect(&e, &QueryEngine::handlerRemoved, this, &FallbacksModel::updateFallbackList);
+    connect(&e, &QueryEngine::fallbackHandlersChanged,
+            this, &FallbacksModel::updateFallbackList);
     updateFallbackList();
 }
 

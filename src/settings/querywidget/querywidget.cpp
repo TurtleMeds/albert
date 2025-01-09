@@ -40,8 +40,7 @@ QueryWidget::QueryWidget(QueryEngine &qe)
         width += + qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
         ui.tableView_queryHandlers->setFixedWidth(width + 2);  // 2: Frame spacing?
     };
-    connect(&qe, &QueryEngine::handlerAdded, this, updateWidth);
-    connect(&qe, &QueryEngine::handlerRemoved, this, updateWidth);
+    connect(&qe, &QueryEngine::queryHandlersChanged, this, updateWidth);
     updateWidth();
 }
 

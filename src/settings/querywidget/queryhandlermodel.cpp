@@ -20,8 +20,9 @@ static int column_count = 4;
 QueryHandlerModel::QueryHandlerModel(QueryEngine &qe, QObject *parent)
     : QAbstractTableModel(parent), engine(qe)
 {
-    connect(&engine, &QueryEngine::handlerAdded, this, &QueryHandlerModel::updateHandlers);
-    connect(&engine, &QueryEngine::handlerRemoved, this, &QueryHandlerModel::updateHandlers);
+    connect(&engine, &QueryEngine::queryHandlersChanged,
+            this, &QueryHandlerModel::updateHandlers);
+
     updateHandlers();
 }
 
@@ -30,11 +31,11 @@ void QueryHandlerModel::updateHandlers()
     beginResetModel();
 
     handlers_.clear();
-    for (auto &[id, h] : engine.triggerHandlers())
+    for (auto &[id, h] : engine.queryHandlers())
         handlers_.emplace_back(h);
 
     ::sort(begin(handlers_), end(handlers_),
-           [&](auto *a, auto *b){ return a->name() < b->name(); });
+           [&](const auto *a, const auto *b){ return a->name() < b->name(); });
 
     endResetModel();
 }
@@ -60,27 +61,25 @@ QVariant QueryHandlerModel::data(const QModelIndex &idx, int role) const
 
     else if (idx.column() == (int) Column::Trigger)
     {
-        auto t = engine.trigger(h->id());
-
         if (role == Qt::DisplayRole)
-            return t.replace(" ", "•");
+            return h->trigger().replace(" ", "•");
 
         else if (role == Qt::EditRole)
-            return t;
+            return h->trigger();
 
         else if (role == Qt::ToolTipRole)
         {
             if (!h->allowTriggerRemap())
                 return tr("This extension does not allow trigger remapping.");
-            else if (auto it = engine.activeTriggerHandlers().find(t);
+            else if (auto it = engine.activeTriggerHandlers().find(h->trigger());
                      it != engine.activeTriggerHandlers().end() && it->second != h)
                 return tr("Trigger '%1' is reserved for '%2'.")
-                    .arg(t, it->second->name());
+                    .arg(h->trigger(), it->second->name());
         }
 
         else if (role == Qt::ForegroundRole)
         {
-            if (auto it = engine.activeTriggerHandlers().find(t);
+            if (auto it = engine.activeTriggerHandlers().find(h->trigger());
                 it == engine.activeTriggerHandlers().end() || it->second != h)
                 return QColor(Qt::red);
             else if (!h->allowTriggerRemap())
@@ -110,11 +109,11 @@ QVariant QueryHandlerModel::data(const QModelIndex &idx, int role) const
         if (h->supportsFuzzyMatching())
         {
             if (role == Qt::CheckStateRole)
-                return engine.fuzzy(h->id()) ? Qt::Checked : Qt::Unchecked;
+                return h->fuzzy() ? Qt::Checked : Qt::Unchecked;
 
             else if (role == Qt::ToolTipRole)
             {
-                if (engine.fuzzy(h->id()))
+                if (h->fuzzy())
                     return tr("Disable fuzzy matching.");
                 else
                     return tr("Enable fuzzy matching.");
