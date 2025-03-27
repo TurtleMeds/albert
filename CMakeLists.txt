@@ -147,6 +147,8 @@ set(LIB_SRC
 
     src/query/fallbackhandler.cpp
     src/query/globalqueryhandler.cpp
+    src/query/globaltriggerqueryhandler.cpp
+    src/query/globaltriggerqueryhandler.h
     src/query/query.cpp
     src/query/queryengine.cpp
     src/query/queryengine.h

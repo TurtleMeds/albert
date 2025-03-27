@@ -21,6 +21,13 @@ static const char *CFG_FALLBACK_ITEM = "fallback";
 static const char *CFG_TRIGGER = "trigger";
 static const char *CFG_FUZZY = "fuzzy";
 
+
+
+
+
+
+
+
 QueryEngine::QueryEngine(ExtensionRegistry &registry) : registry_(registry)
 {
     UsageHistory::initialize();
@@ -264,4 +271,113 @@ void QueryEngine::loadFallbackOrder()
     uint rank = 1;
     for (auto it = o.rbegin(); it != o.rend(); ++it, ++rank)
         fallback_order_.emplace(*it, rank);
+}
+
+QString QueryEngine::GlobalTriggerQueryHandler::id() const
+{ return QStringLiteral("globalquery"); }
+
+QString QueryEngine::GlobalTriggerQueryHandler::name() const
+{ return QStringLiteral("GlobalQuery"); }
+
+QString QueryEngine::GlobalTriggerQueryHandler::description() const
+{ return QStringLiteral("Runs a bunch of global query handlers"); }
+
+void QueryEngine::GlobalTriggerQueryHandler::handleTriggerQuery(albert::Query *)
+{
+    mutex rank_items_mutex;  // 6.4 Still no move semantics in QtConcurrent
+
+    vector<ResultRankItem> results;
+
+    qCDebug(timeCat,).noquote() << QStringLiteral("\x1b[38;5;244m│ Handling│  Scoring│ Count│\x1b[0m");
+
+    function<void(GlobalQueryHandler*)> map = [this, &rank_items_mutex, &results](GlobalQueryHandler *handler)
+    {
+        // blocking map is not interruptible. end cancelled runs fast.
+        if (!isValid())
+            return;
+
+        try {
+            auto t = system_clock::now();
+
+            vector<RankItem> rank_items;
+            if (string_.isEmpty())
+                for (auto &item : handler->handleEmptyQuery(this))
+                    rank_items.emplace_back(::move(item), 0);
+            else
+                rank_items = handler->handleGlobalQuery(this);
+
+            auto d_h = duration_cast<milliseconds>(system_clock::now()-t).count();
+
+            t = system_clock::now();
+            handler->applyUsageScore(&rank_items);
+            auto d_s = duration_cast<milliseconds>(system_clock::now()-t).count();
+
+            // makes no sense to time this, since waiting for unlock
+            unique_lock lock(rank_items_mutex);
+            results.reserve(results.size() + rank_items.size());
+            for (auto &rank_item : rank_items)
+                results.emplace_back(handler, ::move(rank_item));
+
+            qCDebug(timeCat,).noquote()
+                << QStringLiteral("\x1b[38;5;244m│%1 ms│%2 ms│%3│ #%4 '%5' %6\x1b[0m")
+                       .arg(d_h, 6)
+                       .arg(d_s, 6)
+                       .arg(rank_items.size(), 6)
+                       .arg(query_id)
+                       .arg(string_, handler->id());
+        }
+        catch (const exception &e) {
+            WARN << QString("GlobalQueryHandler '%1' threw exception:\n").arg(handler->id()) << e.what();
+        }
+        catch (...) {
+            WARN << QString("GlobalQueryHandler '%1' threw unknown exception:\n").arg(handler->id());
+        }
+    };
+
+    auto tp = system_clock::now();
+    QtConcurrent::blockingMap(query_handlers_, map);
+    auto d_h = duration_cast<milliseconds>(system_clock::now()-tp).count();
+
+    tp = system_clock::now();
+    auto begin = ::begin(results);
+    auto end = ::end(results);
+    auto mid = begin + ::min(20, (int)results.size());
+
+    // Partially sort the visible items for fast response times
+    if (mid != end)
+    {
+        partial_sort(begin, mid, end, greater());
+
+        unique_lock lock(results_buffer_mutex_);
+        for (auto it = begin; it < mid; ++it)
+            results_buffer_.emplace_back(it->extension, ::move(it->rank_item.item));
+        if (valid_)
+            invokeCollectResults();
+
+        begin = mid;
+    }
+
+    if (begin != end)
+    {
+        sort(begin, end, greater());
+
+        unique_lock lock(results_buffer_mutex_);
+        for (auto it = begin; it < end; ++it)
+            results_buffer_.emplace_back(it->extension, ::move(it->rank_item.item));
+        if (valid_)
+            invokeCollectResults();
+    }
+
+    auto d_s = duration_cast<milliseconds>(system_clock::now()-tp).count();
+
+    qCDebug(timeCat,).noquote() << QStringLiteral("\x1b[38;5;33m│ Handling│  Sorting│ Count│\x1b[0m");
+
+    qCDebug(timeCat,).noquote()
+        << QStringLiteral("\x1b[38;5;33m│%1 ms│%2 ms│%3│ #%4 GLOBAL '%5'\x1b[0m")
+               .arg(d_h, 6)
+               .arg(d_s, 6)
+               .arg(results.size(), 6)
+               .arg(query_id)
+               .arg(string_);
+
 }

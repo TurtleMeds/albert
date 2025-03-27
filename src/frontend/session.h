@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 class QueryEngine;
-class QueryExecution;
+class Query;
 namespace albert {
 class Frontend;
 }
@@ -26,7 +26,7 @@ private:
 
     QueryEngine &engine_;
     albert::Frontend &frontend_;
-    std::vector<std::unique_ptr<QueryExecution>> queries_;
+    std::vector<std::unique_ptr<Query>> queries_;
 
 };
 

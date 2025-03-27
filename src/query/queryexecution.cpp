@@ -5,6 +5,7 @@
 #include "queryexecution.h"
 #include "usagedatabase.h"
 #include <QtConcurrent>
+#include <ranges>
 using namespace albert;
 using namespace std::chrono;
 using namespace std;
@@ -12,6 +13,17 @@ using namespace std;
 Q_LOGGING_CATEGORY(timeCat, "albert.query_runtimes")
 
 uint QueryExecution::query_count = 0;
+
+namespace
+{
+struct ResultRankItem
+{
+    albert::Extension *extension;
+    albert::RankItem rank_item;
+    bool operator<(const ResultRankItem &o) const { return rank_item < o.rank_item; }
+    bool operator>(const ResultRankItem &o) const { return rank_item > o.rank_item; }
+};
+}
 
 QueryExecution::QueryExecution(QueryEngine *e,
                                vector<FallbackHandler *> &&fallback_handlers,
@@ -46,7 +58,7 @@ QueryExecution::~QueryExecution()
 
 void QueryExecution::run()
 {
-    future_watcher_.setFuture(QtConcurrent::run([this](){
+    future_watcher_.setFuture(QtConcurrent::run([this]{
         try {
             runFallbackHandlers();
             auto tp = system_clock::now();
@@ -85,9 +97,39 @@ QAbstractListModel *QueryExecution::matches() { return &matches_; }
 
 QAbstractListModel *QueryExecution::fallbacks()  { return &fallbacks_; }
 
-void QueryExecution::activateMatch(uint i, uint a) { matches_.activate(this, i, a); }
+static void activate(const std::vector<ResultItem> result_items, Query *q, uint iidx, uint aidx)
+{
+    try {
+        auto &[e, i] = result_items.at(iidx);
+        try {
+            auto a = i->actions().at(aidx);
 
-void QueryExecution::activateFallback(uint i, uint a) { fallbacks_.activate(this, i, a); }
+            INFO << QString("Activating action %1>%2>%3 (%4>%5>%6) ")
+                    .arg(e->id(), i->id(), a.id, e->name(), i->text(), a.text);
+
+            // Order is cumbersome here
+            UsageHistory::addActivation(q->string(), e->id(), i->id(), a.id);
+
+            // May delete the query, due to hide()
+            // Notes to self:
+            // - QTimer::singleShot(0, this, [a]{ a.function(); });
+            //   Disconnects on query deletion.
+
+            a.function(); // May delete the query, due to hide()
+        }
+        catch (const out_of_range&) {
+            WARN << "Activated action index is invalid:" << aidx;
+        }
+    } catch (const out_of_range&) {
+        WARN << "Activated item index is invalid:" << iidx;
+    }
+}
+
+void QueryExecution::activateMatch(uint i, uint a)
+{ activate(matches_.items, this, i, a); }
+
+void QueryExecution::activateFallback(uint i, uint a)
+{ activate(fallbacks_.items, this, i, a); }
 
 void QueryExecution::add(const shared_ptr<Item> &item)
 {
@@ -143,7 +185,7 @@ void QueryExecution::runFallbackHandlers()
 
     const auto &o = query_engine_->fallbackOrder();
 
-    vector<pair<Extension*,RankItem>> fallbacks;
+    vector<ResultRankItem> fallbacks;
     for (auto *handler : fallback_handlers_)
         for (auto item : handler->fallbacks(QString("%1%2").arg(trigger(), string())))
             if (auto it = o.find(make_pair(handler->id(), item->id())); it == o.end())
@@ -151,10 +193,11 @@ void QueryExecution::runFallbackHandlers()
             else
                 fallbacks.emplace_back(handler, RankItem(::move(item), it->second));
 
-    sort(fallbacks.begin(), fallbacks.end(),
-         [](const auto &a, const auto &b){ return a.second.score > b.second.score; });
+    ranges::sort(fallbacks, greater());
 
-    fallbacks_.add(fallbacks.begin(), fallbacks.end()); // TODO ranges
+    fallbacks_.add(fallbacks | views::transform([](ResultRankItem &fb) {
+                       return ResultItem{fb.extension, fb.rank_item.item};
+                   }));
 }
 
 void QueryExecution::collectResults()
@@ -166,7 +209,7 @@ void QueryExecution::collectResults()
     unique_lock lock(results_buffer_mutex_);
     if (!results_buffer_.empty())
     {
-        matches_.add(results_buffer_.begin(), results_buffer_.end());
+        matches_.add(results_buffer_);
         results_buffer_.clear();
     }
 }

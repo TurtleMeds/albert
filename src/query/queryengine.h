@@ -4,12 +4,14 @@
 #include <QObject>
 #include <map>
 #include <memory>
+#include "triggerqueryhandler.h"
 class QueryExecution;
 namespace albert {
 class ExtensionRegistry;
 class FallbackHandler;
 class GlobalQueryHandler;
 class TriggerQueryHandler;
+class Query;
 }
 
 class QueryEngine : public QObject
@@ -49,10 +51,10 @@ private:
 
     albert::ExtensionRegistry &registry_;
 
-    struct TriggerQueryHandler {
+    struct TriggerQueryHandler
+    {
         TriggerQueryHandler(albert::TriggerQueryHandler *h, QString t, bool f):
-            handler(h), trigger(t), fuzzy(f)
-        {}
+            handler(h), trigger(t), fuzzy(f) {}
         albert::TriggerQueryHandler *handler;
         QString trigger;
         bool fuzzy;
@@ -60,8 +62,7 @@ private:
 
     struct GlobalQueryHandler {
         GlobalQueryHandler(albert::GlobalQueryHandler *h, bool e):
-            handler(h), enabled(e)
-        {}
+            handler(h), enabled(e) {}
         albert::GlobalQueryHandler *handler;
         bool enabled;
     };

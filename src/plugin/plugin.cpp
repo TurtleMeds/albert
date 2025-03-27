@@ -152,7 +152,7 @@ QString Plugin::unload()
         auto t = system_clock::now();
         loader.unload();
         auto d = duration_cast<milliseconds>(system_clock::now() - t).count();
-        DEBG << QString("Plugin unloaded: %1 (%2 ms)").arg(id(), d);
+        DEBG << QString("Plugin unloaded: %1 (%2 ms)").arg(id()).arg(d);
     } catch (const exception &e) {
         err = e.what();
     } catch (...) {

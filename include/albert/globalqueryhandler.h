@@ -19,7 +19,7 @@ namespace albert
 ///
 /// @note Do _not_ use this for long running tasks!
 ///
-class ALBERT_EXPORT GlobalQueryHandler : public albert::TriggerQueryHandler
+class ALBERT_EXPORT GlobalQueryHandler : public TriggerQueryHandler
 {
 public:
     /// The query handling function.

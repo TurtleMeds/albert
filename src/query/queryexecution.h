@@ -10,98 +10,109 @@
 namespace albert { class Item; }
 class QueryEngine;
 
-class QueryExecution : public albert::Query
-{
-    Q_OBJECT  // needed for invokable methods
+// class QueryExecution : public albert::Query
+// {
+//     Q_OBJECT  // needed for invokable methods
 
-public:
+// public:
 
-    // explicit QueryBase(QueryEngine *e,
-    //                    std::vector<albert::FallbackHandler*> fallback_handlers,
-    //                    QString string);
+//     QueryExecution(QueryEngine *e,
+//                    std::vector<albert::FallbackHandler*> &&fallback_handlers,
+//                    albert::TriggerQueryHandler *query_handler,
+//                    QString string,
+//                    QString trigger);
+//     ~QueryExecution();
 
-    QueryExecution(QueryEngine *e,
-                   std::vector<albert::FallbackHandler*> &&fallback_handlers,
-                   albert::TriggerQueryHandler *query_handler,
-                   QString string,
-                   QString trigger);
-    ~QueryExecution();
+//     void run();
+//     void cancel();
 
-    void run();
-    void cancel();
+//     QString trigger() const override final;
+//     QString string() const override final;
+//     QString synopsis() const override final;
+//     const bool &isValid() const override final;
+//     bool isFinished() const override final;
+//     bool isTriggered() const override final;
 
-    QString trigger() const override final;
-    QString string() const override final;
-    QString synopsis() const override final;
-    const bool &isValid() const override final;
-    bool isFinished() const override final;
-    bool isTriggered() const override final;
+//     QAbstractListModel *matches() override final;
+//     QAbstractListModel *fallbacks() override final;
 
-    QAbstractListModel *matches() override final;
-    QAbstractListModel *fallbacks() override final;
+//     void activateMatch(uint item, uint action) override final;
+//     void activateFallback(uint item, uint action) override final;
 
-    void activateMatch(uint item, uint action) override final;
-    void activateFallback(uint item, uint action) override final;
+//     void add(const std::shared_ptr<albert::Item> &item) override;
+//     void add(std::shared_ptr<albert::Item> &&item) override;
+//     void add(const std::vector<std::shared_ptr<albert::Item>> &items) override;
+//     void add(std::vector<std::shared_ptr<albert::Item>> &&items) override;
 
-    void add(const std::shared_ptr<albert::Item> &item) override;
-    void add(std::shared_ptr<albert::Item> &&item) override;
-    void add(const std::vector<std::shared_ptr<albert::Item>> &items) override;
-    void add(std::vector<std::shared_ptr<albert::Item>> &&items) override;
+// protected:
 
-protected:
+//     void runFallbackHandlers();
+//     void invokeCollectResults();
+//     Q_INVOKABLE void collectResults();
 
-    void runFallbackHandlers();
-    void invokeCollectResults();
-    Q_INVOKABLE void collectResults();
+//     QueryEngine *query_engine_;
+//     static uint query_count;
+//     const uint query_id;
 
-    QueryEngine *query_engine_;
-    static uint query_count;
-    const uint query_id;
+//     const QString trigger_;
+//     const QString string_;
 
-    const QString trigger_;
-    const QString string_;
+//     albert::TriggerQueryHandler * const query_handler_;
+//     const std::vector<albert::FallbackHandler*> fallback_handlers_;
 
-    albert::TriggerQueryHandler * const query_handler_;
-    const std::vector<albert::FallbackHandler*> fallback_handlers_;
+//     bool valid_ = true;
 
-    bool valid_ = true;
+//     QFutureWatcher<void> future_watcher_;
 
-    QFutureWatcher<void> future_watcher_;
+//     std::vector<ResultItem> results_buffer_;
+//     std::mutex results_buffer_mutex_;
 
-    // Mutable because global query handler needs adds items in handleTriggerQuery(…) _const_
-    mutable std::vector<std::pair<albert::Extension*, std::shared_ptr<albert::Item>>> results_buffer_;
-    std::mutex results_buffer_mutex_;
+// private:
 
-private:
+//     ItemsModel matches_;
+//     ItemsModel fallbacks_;
 
-    ItemsModel matches_;
-    ItemsModel fallbacks_;
-
-};
+// };
 
 
-class GlobalQuery final : public QueryExecution,
-                          public albert::TriggerQueryHandler
-{
-    Q_OBJECT  // needed for invokable methods
+// class GlobalQuery final : public QueryExecution,
+//                           public albert::TriggerQueryHandler
+// {
+//     Q_OBJECT  // needed for invokable methods
 
-public:
+// public:
 
-    GlobalQuery(QueryEngine *e,
-                std::vector<albert::FallbackHandler*> &&fallback_handlers,
-                std::vector<albert::GlobalQueryHandler*> &&query_handlers,
-                QString string);
+//     GlobalQuery(QueryEngine *e,
+//                 std::vector<albert::FallbackHandler*> &&fallback_handlers,
+//                 std::vector<albert::GlobalQueryHandler*> &&query_handlers,
+//                 QString string);
 
-    QString id() const override;
-    QString name() const override;
-    QString description() const override;
-    void handleTriggerQuery(albert::Query *) override;
+//     QString id() const override;
+//     QString name() const override;
+//     QString description() const override;
+//     void handleTriggerQuery(albert::Query *) override;
 
-private:
+// private:
 
-    void addRankItems(std::vector<std::pair<albert::Extension*,albert::RankItem>>::iterator begin,
-                      std::vector<std::pair<albert::Extension*,albert::RankItem>>::iterator end);
+//     void addRankItems(decltype(results_buffer_)::iterator begin,
+//                       decltype(results_buffer_)::iterator end);
 
-    std::vector<albert::GlobalQueryHandler*> query_handlers_;
+//     void add(std::ranges::input_range auto&& range)
+//     {
+//         if (!valid_)
+//             return;
 
-};
+//         std::unique_lock lock(results_buffer_mutex_);
+
+//         results_buffer_.reserve(results_buffer_.size() + range.size());
+
+//         for (auto&& item : range)
+//             results_buffer_.emplace_back(forward_like<decltype(range)>(item));
+
+//         if (valid_)
+//             invokeCollectResults();
+//     }
+
+//     std::vector<albert::GlobalQueryHandler*> query_handlers_;
+
+// };

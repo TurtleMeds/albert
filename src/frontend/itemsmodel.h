@@ -2,38 +2,72 @@
 
 #pragma once
 #include <QAbstractListModel>
+#include <map>
 #include <memory>
 #include <vector>
-#include <map>
 namespace albert{
-class Query;
 class Extension;
 class Item;
+class Query;
 class RankItem;
 }
+
+
+struct ResultItem
+{
+    albert::Extension *extension;
+    std::shared_ptr<albert::Item> item;
+};
+
+
+// TODO remove with C++23
+// From https://en.cppreference.com/w/cpp/utility/forward_like
+template<class T, class U>
+[[nodiscard]] constexpr auto&& forward_like(U&& x) noexcept
+{
+    constexpr bool is_adding_const = std::is_const_v<std::remove_reference_t<T>>;
+    if constexpr (std::is_lvalue_reference_v<T&&>)
+        if constexpr (is_adding_const)
+            return std::as_const(x);
+        else
+            return static_cast<U&>(x);
+    else
+        if constexpr (is_adding_const)
+            return std::move(std::as_const(x));
+        else
+            return std::move(x);
+}
+
 
 class ItemsModel final : public QAbstractListModel
 {
 public:
+
     ItemsModel(QObject *parent = nullptr); // important for qml cppownership
 
     QHash<int, QByteArray> roleNames() const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
 
-    void add(albert::Extension*, std::vector<std::shared_ptr<albert::Item>>&&);
-
-    void add(std::vector<std::pair<albert::Extension*,std::shared_ptr<albert::Item>>>::iterator begin,
-             std::vector<std::pair<albert::Extension*,std::shared_ptr<albert::Item>>>::iterator end);
-
-    void add(std::vector<std::pair<albert::Extension*,albert::RankItem>>::iterator begin,
-             std::vector<std::pair<albert::Extension*,albert::RankItem>>::iterator end);
-
     QAbstractListModel *buildActionsModel(uint i) const;
 
-    void activate(albert::Query *q, uint i, uint a);
+    void add(std::ranges::input_range auto&& range)
+    {
+        items.reserve(items.size() + range.size());
 
-private:
-    std::vector<std::pair<albert::Extension*, std::shared_ptr<albert::Item>>> items;
-    mutable std::map<std::pair<albert::Extension*,albert::Item*>, QStringList> actionsCache;
+        beginInsertRows(QModelIndex(), (int)items.size(),
+                        items.size() + range.size() - 1);
+
+        for (auto&& item : range)
+            items.emplace_back(forward_like<decltype(range)>(item));
+
+        endInsertRows();
+    }
+
+
+
+/// itens
+    std::vector<ResultItem> items;
+    mutable std::map<albert::Item*, QStringList> actionsCache;
+
 };

@@ -1,8 +1,8 @@
 // Copyright (c) 2024 Manuel Schneider
 
 #include "frontend.h"
+#include "query.h"
 #include "queryengine.h"
-#include "queryexecution.h"
 #include "session.h"
 using namespace albert;
 using namespace std;
